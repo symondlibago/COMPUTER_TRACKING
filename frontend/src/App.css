@@ -1,0 +1,228 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* Custom Color Scheme: Black/White/Electric Blue/Red */
+  --electric-blue: #00D4FF;
+  --electric-red: #FF0040;
+  --pure-black: #000000;
+  --pure-white: #FFFFFF;
+  --dark-gray: #1A1A1A;
+  --light-gray: #F5F5F5;
+  
+  --background: var(--pure-white);
+  --foreground: var(--pure-black);
+  --card: var(--pure-white);
+  --card-foreground: var(--pure-black);
+  --popover: var(--pure-white);
+  --popover-foreground: var(--pure-black);
+  --primary: var(--electric-blue);
+  --primary-foreground: var(--pure-white);
+  --secondary: var(--light-gray);
+  --secondary-foreground: var(--pure-black);
+  --muted: var(--light-gray);
+  --muted-foreground: #666666;
+  --accent: var(--electric-blue);
+  --accent-foreground: var(--pure-white);
+  --destructive: var(--electric-red);
+  --border: #E5E5E5;
+  --input: #F0F0F0;
+  --ring: var(--electric-blue);
+  --chart-1: var(--electric-blue);
+  --chart-2: var(--electric-red);
+  --chart-3: var(--pure-black);
+  --chart-4: #666666;
+  --chart-5: #999999;
+  --sidebar: var(--pure-white);
+  --sidebar-foreground: var(--pure-black);
+  --sidebar-primary: var(--electric-blue);
+  --sidebar-primary-foreground: var(--pure-white);
+  --sidebar-accent: var(--light-gray);
+  --sidebar-accent-foreground: var(--pure-black);
+  --sidebar-border: #E5E5E5;
+  --sidebar-ring: var(--electric-blue);
+}
+
+.dark {
+  /* Dark Theme with Black/White/Electric Blue/Red */
+  --background: var(--pure-black);
+  --foreground: var(--pure-white);
+  --card: var(--dark-gray);
+  --card-foreground: var(--pure-white);
+  --popover: var(--dark-gray);
+  --popover-foreground: var(--pure-white);
+  --primary: var(--electric-blue);
+  --primary-foreground: var(--pure-black);
+  --secondary: var(--dark-gray);
+  --secondary-foreground: var(--pure-white);
+  --muted: var(--dark-gray);
+  --muted-foreground: #CCCCCC;
+  --accent: var(--electric-blue);
+  --accent-foreground: var(--pure-black);
+  --destructive: var(--electric-red);
+  --border: #333333;
+  --input: #2A2A2A;
+  --ring: var(--electric-blue);
+  --sidebar: var(--pure-black);
+  --sidebar-foreground: var(--pure-white);
+  --sidebar-primary: var(--electric-blue);
+  --sidebar-primary-foreground: var(--pure-black);
+  --sidebar-accent: var(--dark-gray);
+  --sidebar-accent-foreground: var(--pure-white);
+  --sidebar-border: #333333;
+  --sidebar-ring: var(--electric-blue);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 500;
+  }
+}
+
+@layer utilities {
+  /* Bold Typography Classes */
+  .text-bold {
+    font-weight: 700;
+  }
+  
+  .text-extra-bold {
+    font-weight: 800;
+  }
+  
+  .text-black {
+    font-weight: 900;
+  }
+  
+  /* High-Energy Visual Effects */
+  .glow-blue {
+    box-shadow: 0 0 20px var(--electric-blue);
+  }
+  
+  .glow-red {
+    box-shadow: 0 0 20px var(--electric-red);
+  }
+  
+  .gradient-text {
+    background: linear-gradient(45deg, var(--electric-blue), var(--electric-red));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, var(--electric-blue), var(--electric-red));
+  }
+  
+  /* Status Colors */
+  .status-available {
+    @apply bg-green-500 text-white;
+  }
+  
+  .status-in-use {
+    @apply bg-red-500 text-white;
+  }
+  
+  .status-maintenance {
+    @apply bg-yellow-500 text-black;
+  }
+  
+  /* Animation Classes */
+  .pulse-blue {
+    animation: pulse-blue 2s infinite;
+  }
+  
+  .pulse-red {
+    animation: pulse-red 2s infinite;
+  }
+  
+  @keyframes pulse-blue {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+    }
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(255, 0, 64, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(255, 0, 64, 0);
+    }
+  }
+  
+  /* Mobile-First Responsive Design */
+  .container-responsive {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* High-Energy Button Styles */
+  .btn-energy {
+    @apply relative overflow-hidden transition-all duration-300 transform hover:scale-105;
+  }
+  
+  .btn-energy::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-energy:hover::before {
+    left: 100%;
+  }
+}
+
