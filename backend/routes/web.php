@@ -16,3 +16,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Define the login route that the Authenticate middleware is looking for
+Route::get('/login', function () {
+    return response()->json([
+        'message' => 'Please login to access this resource',
+        'login_url' => '/login'
+    ], 401);
+})->name('login');
+

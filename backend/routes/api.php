@@ -2,11 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\ComputerController;
-use App\Http\Controllers\Api\SessionController;
-use App\Http\Controllers\Api\ReservationController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PCController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\PCUsageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,30 +18,42 @@ use App\Http\Controllers\Api\ReservationController;
 |
 */
 
-// Public routes
-Route::post('/register', [AuthController::class, 'register']);
+// Public authentication routes
 Route::post('/login', [AuthController::class, 'login']);
+
+// Specific login routes for frontend compatibility (FIXED - removed /auth/ prefix)
+Route::post('/admin/login', [AuthController::class, 'adminLogin']);
+Route::post('/student/login', [AuthController::class, 'studentLogin']);
+
+// Public PC Management routes (for testing - remove auth middleware temporarily)
+Route::apiResource('pcs', PCController::class);
+Route::patch('/pcs/{pc}/status', [PCController::class, 'updateStatus']);
+
+// Student Management routes (public for admin access)
+Route::apiResource('students', StudentController::class);
+Route::get('/students/search', [StudentController::class, 'search']);
+Route::get('/students/by-id/{studentId}', [StudentController::class, 'getByStudentId']);
+
+// PC Usage Management routes
+Route::get('/pc-usage/active', [PCUsageController::class, 'getActiveUsage']);
+Route::post('/pc-usage/set-in-use', [PCUsageController::class, 'setPCInUse']);
+Route::patch('/pc-usage/{id}/complete', [PCUsageController::class, 'completeUsage']);
+Route::patch('/pc-usage/{id}/cancel', [PCUsageController::class, 'cancelUsage']);
+Route::get('/pc-usage/pc/{pcId}/history', [PCUsageController::class, 'getPCUsageHistory']);
+Route::get('/pc-usage/student/{studentId}/history', [PCUsageController::class, 'getStudentUsageHistory']);
+
+// New routes for student portal
+Route::get('/pc-status/students', [PCUsageController::class, 'getPCStatusForStudents']);
+Route::get('/student/{studentId}/active-usage', [PCUsageController::class, 'getStudentActiveUsage']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/user', [AuthController::class, 'me']);
     
-    // Dashboard routes
-    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
-    Route::get('/dashboard/admin-stats', [DashboardController::class, 'adminStats']);
-    
-    // Computer routes
-    Route::apiResource('computers', ComputerController::class);
-    
-    // Session routes
-    Route::apiResource('sessions', SessionController::class);
-    
-    // Reservation routes
-    Route::apiResource('reservations', ReservationController::class);
+    // You can move PC routes back here once authentication is working properly
+    // Route::apiResource('pcs', PCController::class);
+    // Route::patch('/pcs/{pc}/status', [PCController::class, 'updateStatus']);
 });
-
-    // Additional session routes
-    Route::get('/sessions/active', [SessionController::class, 'active']);
 

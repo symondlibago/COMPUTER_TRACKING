@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,10 +18,8 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'email',
-        'student_id',
-        'university',
         'role',
+        'student_id',
         'password',
     ];
 
@@ -42,24 +39,37 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-    
+
     /**
-     * Get the sessions for the user.
+     * Check if user is admin
+     *
+     * @return bool
      */
-    public function sessions()
+    public function isAdmin()
     {
-        return $this->hasMany(Session::class);
+        return $this->role === 'admin';
     }
 
     /**
-     * Get the reservations for the user.
+     * Check if user is student
+     *
+     * @return bool
      */
-    public function reservations()
+    public function isStudent()
     {
-        return $this->hasMany(Reservation::class);
+        return $this->role === 'student';
+    }
+
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'student_id';
     }
 }
 

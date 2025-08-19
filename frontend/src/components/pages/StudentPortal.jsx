@@ -1,200 +1,329 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../../context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Monitor, 
-  Users, 
-  Clock, 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Monitor,
+  Users,
+  Clock,
   CheckCircle,
   AlertCircle,
   Timer,
-  LogIn,
-  LogOut,
-  User,
+  Activity,
+  Settings,
+  RefreshCw,
   MapPin,
-  Cpu,
-  Play,
-  Pause,
-  RotateCcw
+  StopCircle,
+  LogOut
 } from 'lucide-react';
+import API_BASE_URL from './Config';
 
 function StudentPortal() {
-  const { state, dispatch, ActionTypes } = useApp();
   const navigate = useNavigate();
-  const [studentLogin, setStudentLogin] = useState({ name: '', studentId: '', hours: 2 });
-  const [selectedPC, setSelectedPC] = useState(null);
-  const [sessionTime, setSessionTime] = useState(0);
-  const [isActive, setIsActive] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [pcs, setPcs] = useState([]);
+  const [activeUsage, setActiveUsage] = useState([]);
+  const [studentActiveUsage, setStudentActiveUsage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [remainingTime, setRemainingTime] = useState(0);
 
-  // Timer for active session
+  // Check for logged in user on component mount
+  useEffect(() => {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      try {
+        const parsedUserData = JSON.parse(userData);
+        if (parsedUserData.userType === 'student') {
+          setCurrentUser(parsedUserData);
+        } else {
+          // Not a student, redirect to login
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        navigate('/login');
+      }
+    } else {
+      // No user data, redirect to login
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Real-time timer for remaining time
   useEffect(() => {
     let interval = null;
-    if (isActive && state.currentUser && state.userType === 'student') {
+    if (studentActiveUsage && remainingTime > 0) {
       interval = setInterval(() => {
-        setSessionTime(time => time + 1);
-      }, 1000);
-    } else if (!isActive) {
-      clearInterval(interval);
+        setRemainingTime(prevTime => {
+          const newTime = Math.max(0, prevTime - 1);
+          if (newTime === 0) {
+            // Time expired, refresh data
+            fetchStudentActiveUsage();
+          }
+          return newTime;
+        });
+      }, 60000); // Update every minute
     }
     return () => clearInterval(interval);
-  }, [isActive, state.currentUser, state.userType]);
+  }, [studentActiveUsage, remainingTime]);
 
-  // Format time display
-  const formatTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Update remaining time when studentActiveUsage changes
+  useEffect(() => {
+    if (studentActiveUsage && studentActiveUsage.remaining_minutes > 0) {
+      setRemainingTime(studentActiveUsage.remaining_minutes);
+    } else {
+      setRemainingTime(0);
+    }
+  }, [studentActiveUsage]);
 
-  // Handle student login
-  const handleStudentLogin = () => {
-    if (studentLogin.name && studentLogin.studentId) {
-      const student = state.students.find(s => s.studentId === studentLogin.studentId) || {
-        id: Date.now(),
-        name: studentLogin.name,
-        studentId: studentLogin.studentId,
-        email: `${studentLogin.studentId}@student.edu`
-      };
+  // Fetch PC status for students with fallback
+  const fetchPCStatus = async () => {
+    try {
+      let response = await fetch(`${API_BASE_URL}/pc-status/students`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
       
-      dispatch({
-        type: ActionTypes.LOGIN,
-        payload: {
-          user: student,
-          userType: 'student'
-        }
-      });
-    }
-  };
-
-  // Handle PC selection and sign-in
-  const handlePCSignIn = (pc) => {
-    if (pc.status === 'available' && state.currentUser) {
-      dispatch({
-        type: ActionTypes.ASSIGN_PC,
-        payload: {
-          pcId: pc.id,
-          user: {
-            ...state.currentUser,
-            startTime: new Date()
+      if (!response.ok) {
+        console.log('Student endpoint failed, trying regular PC endpoint...');
+        response = await fetch(`${API_BASE_URL}/pcs`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
+        });
+      }
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('PC Status Data:', data.data); // Debug log
+        
+        let pcData = data.data || [];
+        if (pcData.length > 0 && !pcData[0].hasOwnProperty('is_available')) {
+          pcData = pcData.map(pc => ({
+            ...pc,
+            is_available: pc.status === 'active',
+            is_in_use: pc.status === 'in-use',
+            remaining_minutes: 0,
+            elapsed_minutes: 0,
+            start_time: null
+          }));
+        }
+        
+        setPcs(pcData);
+        setLastUpdated(new Date());
+      } else {
+        console.error('Failed to fetch PC status from both endpoints');
+        showAlert('error', 'Failed to fetch PC status');
+      }
+    } catch (error) {
+      console.error('Fetch PC status error:', error);
+      showAlert('error', 'Error connecting to server');
+    }
+  };
+
+  // Fetch active usage sessions
+  const fetchActiveUsage = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-usage/active`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
-      setSelectedPC(pc);
-      setIsActive(true);
-      setSessionTime(0);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Active Usage Data:', data.data); // Debug log
+        setActiveUsage(data.data || []);
+      } else {
+        console.error('Failed to fetch active usage');
+      }
+    } catch (error) {
+      console.error('Fetch active usage error:', error);
     }
   };
 
-  // Handle PC sign-out
-  const handlePCSignOut = () => {
-    if (selectedPC) {
-      dispatch({
-        type: ActionTypes.RELEASE_PC,
-        payload: selectedPC.id
-      });
-      setSelectedPC(null);
-      setIsActive(false);
-      setSessionTime(0);
-    }
-  };
-
-  // Join queue
-  const handleJoinQueue = () => {
-    if (state.currentUser && !state.queue.find(q => q.studentId === state.currentUser.id)) {
-      dispatch({
-        type: ActionTypes.JOIN_QUEUE,
-        payload: {
-          studentId: state.currentUser.id,
-          studentName: state.currentUser.name,
-          requestedHours: studentLogin.hours
+  // Fetch student's active usage
+  const fetchStudentActiveUsage = async () => {
+    if (!currentUser || !currentUser.student_id) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/student/${currentUser.student_id}/active-usage`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Student Active Usage Data:', data.data); // Debug log
+        setStudentActiveUsage(data.data);
+      } else {
+        console.error('Failed to fetch student active usage');
+        setStudentActiveUsage(null);
+      }
+    } catch (error) {
+      console.error('Fetch student active usage error:', error);
+      setStudentActiveUsage(null);
     }
   };
 
-  // Leave queue
-  const handleLeaveQueue = () => {
-    const queueItem = state.queue.find(q => q.studentId === state.currentUser?.id);
-    if (queueItem) {
-      dispatch({
-        type: ActionTypes.REMOVE_FROM_QUEUE,
-        payload: queueItem.id
+  // Initial data fetch and setup interval
+  useEffect(() => {
+    if (currentUser) {
+      const loadData = async () => {
+        setLoading(true);
+        await Promise.all([fetchPCStatus(), fetchActiveUsage(), fetchStudentActiveUsage()]);
+        setLoading(false);
+      };
+
+      loadData();
+      
+      // Set up interval to refresh data every 30 seconds
+      const interval = setInterval(() => {
+        fetchPCStatus();
+        fetchActiveUsage();
+        fetchStudentActiveUsage();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentUser]);
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+  };
+
+  // Format minutes to readable time
+  const formatMinutes = (minutes) => {
+    if (!minutes || minutes <= 0) return '0m';
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${mins}m`;
+  };
+
+  // Handle end session
+  const handleEndSession = async () => {
+    if (!studentActiveUsage) {
+      showAlert('error', 'No active session to end');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-usage/${studentActiveUsage.id}/complete`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', 'Session ended successfully!');
+        setStudentActiveUsage(null);
+        setRemainingTime(0);
+        // Refresh all data
+        fetchPCStatus();
+        fetchActiveUsage();
+        fetchStudentActiveUsage();
+      } else {
+        showAlert('error', data.message || 'Failed to end session');
+      }
+    } catch (error) {
+      console.error('End session error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Manual refresh function
+  const handleRefresh = async () => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    await Promise.all([fetchPCStatus(), fetchActiveUsage(), fetchStudentActiveUsage()]);
+    setLoading(false);
+    showAlert('success', 'Data refreshed successfully');
+  };
 
-  // Check if user is in queue
-  const userInQueue = state.queue.find(q => q.studentId === state.currentUser?.id);
-  const queuePosition = userInQueue ? state.queue.findIndex(q => q.id === userInQueue.id) + 1 : 0;
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    navigate('/login');
+  };
 
-  // Get available PCs
-  const availablePCs = state.pcs.filter(pc => pc.status === 'available');
-  const currentUserPC = state.pcs.find(pc => pc.currentUser?.id === state.currentUser?.id);
+  // Get PC status icon
+  const getStatusIcon = (pc) => {
+    if (pc.is_available || pc.status === 'active') return CheckCircle;
+    if (pc.is_in_use || pc.status === 'in-use') return Activity;
+    return Settings;
+  };
 
-  if (!state.currentUser || state.userType !== 'student') {
+  // Get PC status color
+  const getStatusColor = (pc) => {
+    if (pc.is_available || pc.status === 'active') return 'text-green-600';
+    if (pc.is_in_use || pc.status === 'in-use') return 'text-blue-600';
+    return 'text-gray-600';
+  };
+
+  // Get PC status text
+  const getStatusText = (pc) => {
+    if (pc.is_available || pc.status === 'active') return 'Available';
+    if (pc.is_in_use || pc.status === 'in-use') return 'In Use';
+    return 'Unavailable';
+  };
+
+  // Get available and in-use PCs
+  const availablePCs = pcs.filter(pc => pc.is_available || pc.status === 'active');
+  const inUsePCs = pcs.filter(pc => pc.is_in_use || pc.status === 'in-use');
+
+  // Show loading if no current user yet
+  if (!currentUser) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md mx-auto mt-20"
+        className="flex items-center justify-center min-h-screen"
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Student Login
-            </CardTitle>
-            <CardDescription>
-              Sign in to access computer lab resources
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={studentLogin.name}
-                onChange={(e) => setStudentLogin({...studentLogin, name: e.target.value})}
-                placeholder="Enter your full name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="studentId">Student ID</Label>
-              <Input
-                id="studentId"
-                value={studentLogin.studentId}
-                onChange={(e) => setStudentLogin({...studentLogin, studentId: e.target.value})}
-                placeholder="Enter your student ID"
-              />
-            </div>
-            <div>
-              <Label htmlFor="hours">Requested Hours</Label>
-              <Input
-                id="hours"
-                type="number"
-                min="1"
-                max="8"
-                value={studentLogin.hours}
-                onChange={(e) => setStudentLogin({...studentLogin, hours: parseInt(e.target.value)})}
-              />
-            </div>
-            <Button 
-              onClick={handleStudentLogin} 
-              className="w-full btn-energy"
-              disabled={!studentLogin.name || !studentLogin.studentId}
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading user information...</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (loading && pcs.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-center min-h-screen"
+      >
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading PC information...</p>
+        </div>
       </motion.div>
     );
   }
@@ -205,109 +334,128 @@ function StudentPortal() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {/* Success/Error Alert */}
+      <AnimatePresence>
+        {alert.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 z-50 max-w-md"
+          >
+            <Alert className={`${
+              alert.type === 'success' 
+                ? 'border-green-500 bg-green-50 shadow-lg' 
+                : 'border-red-500 bg-red-50 shadow-lg'
+            }`}>
+              {alert.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              )}
+              <AlertDescription className={`${
+                alert.type === 'success' ? 'text-green-800' : 'text-red-800'
+              } font-medium`}>
+                {alert.message}
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Student Portal</h1>
           <p className="text-muted-foreground">
-            Welcome, {state.currentUser.name}
+            Welcome, {currentUser.user.name} ({currentUser.student_id})
           </p>
+          {lastUpdated && (
+            <p className="text-xs text-muted-foreground">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          )}
         </div>
-
+        <div className="flex gap-2">
+          <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
       </div>
 
-      {/* Current Session Dashboard */}
-      {currentUserPC && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8"
-        >
+      {/* Student Active Session or No Active Session */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="mb-8"
+      >
+        {studentActiveUsage ? (
           <Card className="border-primary bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Monitor className="h-5 w-5" />
-                Active Session - {currentUserPC.name}
+                Active Session - {studentActiveUsage.pc_name}
               </CardTitle>
               <CardDescription>
-                {currentUserPC.location} • {currentUserPC.specs}
+                Row {studentActiveUsage.pc_row} • Started at {new Date(studentActiveUsage.start_time).toLocaleTimeString()}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-4xl font-bold text-primary mb-2">
-                    {formatTime(sessionTime)}
+                    {formatMinutes(studentActiveUsage.elapsed_minutes)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Session Time</p>
+                  <p className="text-sm text-muted-foreground">Active Duration</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-500 mb-2">
-                    {formatTime(studentLogin.hours * 3600 - sessionTime)}
+                  <div className={`text-2xl font-bold mb-2 ${
+                    remainingTime <= 10 ? 'text-red-500' : 'text-green-500'
+                  }`}>
+                    {formatMinutes(remainingTime)}
                   </div>
                   <p className="text-sm text-muted-foreground">Time Remaining</p>
+                  {remainingTime <= 10 && remainingTime > 0 && (
+                    <p className="text-xs text-red-500 mt-1">Session ending soon!</p>
+                  )}
+                  {remainingTime === 0 && (
+                    <p className="text-xs text-red-500 mt-1">Session expired</p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2">
                   <Button
-                    onClick={() => setIsActive(!isActive)}
-                    variant="outline"
-                    className="btn-energy"
-                  >
-                    {isActive ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                    {isActive ? 'Pause' : 'Resume'}
-                  </Button>
-                  <Button
-                    onClick={handlePCSignOut}
+                    onClick={handleEndSession}
                     variant="destructive"
-                    className="btn-energy"
+                    disabled={loading}
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    End Session
+                    <StopCircle className="h-4 w-4 mr-2" />
+                    {loading ? 'Ending...' : 'End Session'}
                   </Button>
+                  <div className="text-xs text-muted-foreground text-center">
+                    Total: {formatMinutes(studentActiveUsage.minutes_requested)}
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </motion.div>
-      )}
-
-      {/* Queue Status */}
-      {userInQueue && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Card className="border-orange-500 bg-orange-50">
+        ) : (
+          <Card className="border-gray-300 bg-gray-50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-600">
+              <CardTitle className="flex items-center gap-2 text-gray-600">
                 <Clock className="h-5 w-5" />
-                You're in the Queue
+                No Active Session
               </CardTitle>
+              <CardDescription>
+                You don't have any active PC usage at the moment.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-medium">Position: #{queuePosition}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Requested {userInQueue.requestedHours} hours • Joined at {new Date(userInQueue.queueTime).toLocaleTimeString()}
-                  </p>
-                </div>
-                <Button
-                  onClick={handleLeaveQueue}
-                  variant="outline"
-                  className="btn-energy"
-                >
-                  Leave Queue
-                </Button>
-              </div>
-            </CardContent>
           </Card>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Available PCs */}
+        {/* All PCs Display */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -317,73 +465,81 @@ function StudentPortal() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Monitor className="h-5 w-5" />
-                Available Computers ({availablePCs.length})
+                All Computers ({pcs.length})
               </CardTitle>
               <CardDescription>
-                Select a computer to start your session
+                Current status of all computers in the lab
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {availablePCs.length === 0 ? (
+              {pcs.length === 0 ? (
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No PCs Available</h3>
+                  <h3 className="text-lg font-medium mb-2">No PCs Found</h3>
                   <p className="text-muted-foreground mb-4">
-                    All computers are currently in use. Join the queue to be notified when one becomes available.
+                    No computers are currently registered in the system.
                   </p>
-                  {!userInQueue && !currentUserPC && (
-                    <Button onClick={handleJoinQueue} className="btn-energy">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Join Queue
-                    </Button>
-                  )}
+                  <Button onClick={handleRefresh} variant="outline">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {availablePCs.map((pc) => (
-                    <motion.div
-                      key={pc.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="p-4 border border-border rounded-lg hover:shadow-md transition-all cursor-pointer"
-                      onClick={() => !currentUserPC && handlePCSignIn(pc)}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{pc.name}</h4>
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      </div>
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          {pc.location}
+                  {pcs.map((pc) => {
+                    const StatusIcon = getStatusIcon(pc);
+                    const isAvailable = pc.is_available || pc.status === 'active';
+                    const isInUse = pc.is_in_use || pc.status === 'in-use';
+                    
+                    return (
+                      <motion.div
+                        key={pc.id}
+                        whileHover={{ scale: 1.02 }}
+                        className={`p-4 border rounded-lg transition-all ${
+                          isAvailable 
+                            ? 'border-green-200 bg-green-50 hover:shadow-md' 
+                            : isInUse 
+                            ? 'border-blue-200 bg-blue-50'
+                            : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">{pc.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <StatusIcon className={`h-5 w-5 ${getStatusColor(pc)}`} />
+                            <span className={`text-sm font-medium ${getStatusColor(pc)}`}>
+                              {getStatusText(pc)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Cpu className="h-4 w-4" />
-                          {pc.specs}
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {pc.row}
+                          </div>
+                          {isInUse && pc.remaining_minutes > 0 && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              {formatMinutes(pc.remaining_minutes)} remaining
+                            </div>
+                          )}
+                          {isInUse && pc.elapsed_minutes > 0 && (
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-4 w-4" />
+                              {formatMinutes(pc.elapsed_minutes)} elapsed
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      {!currentUserPC && (
-                        <Button 
-                          className="w-full mt-3 btn-energy" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePCSignIn(pc);
-                          }}
-                        >
-                          <LogIn className="h-4 w-4 mr-2" />
-                          Select This PC
-                        </Button>
-                      )}
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Lab Status & Queue Info */}
+        {/* Lab Status & Statistics */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -401,7 +557,7 @@ function StudentPortal() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Total PCs</span>
-                  <span className="font-medium">{state.pcs.length}</span>
+                  <span className="font-medium">{pcs.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-green-600">Available</span>
@@ -409,76 +565,74 @@ function StudentPortal() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-blue-600">In Use</span>
-                  <span className="font-medium text-blue-600">
-                    {state.pcs.filter(pc => pc.status === 'in-use').length}
-                  </span>
+                  <span className="font-medium text-blue-600">{inUsePCs.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-yellow-600">Maintenance</span>
-                  <span className="font-medium text-yellow-600">
-                    {state.pcs.filter(pc => pc.status === 'maintenance').length}
+                  <span className="text-sm text-gray-600">Unavailable</span>
+                  <span className="font-medium text-gray-600">
+                    {pcs.length - availablePCs.length - inUsePCs.length}
                   </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Queue Information */}
+          {/* Active Sessions */}
+          {activeUsage.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Active Sessions ({activeUsage.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activeUsage.map((usage) => (
+                    <div key={usage.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-medium text-blue-900">{usage.pc_name}</h4>
+                        <Activity className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="text-sm text-blue-700">
+                        <div className="flex justify-between">
+                          <span>{usage.pc_row}</span>
+                          <span>{formatMinutes(usage.remaining_minutes)} left</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Elapsed: {formatMinutes(usage.elapsed_minutes)}</span>
+                          <span>Total: {formatMinutes(usage.minutes_requested)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Quick Stats */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Queue Status
+                Quick Stats
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm">Students Waiting</span>
-                  <span className="font-medium text-orange-500">{state.queue.length}</span>
+                  <span className="text-sm">Utilization Rate</span>
+                  <span className="font-medium">
+                    {pcs.length > 0 ? Math.round((inUsePCs.length / pcs.length) * 100) : 0}%
+                  </span>
                 </div>
-                {state.queue.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Next in line:</p>
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="font-medium">{state.queue[0].studentName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Waiting for {state.queue[0].requestedHours} hours
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {!userInQueue && !currentUserPC && availablePCs.length === 0 && (
-                  <Button onClick={handleJoinQueue} className="w-full btn-energy">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Join Queue
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Help & Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>How It Works</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
-                <p>Select an available computer to start your session</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
-                <p>If no PCs are available, join the queue</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
-                <p>You'll have 5 minutes to sign in when notified</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">4</div>
-                <p>End your session when finished</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Available Rate</span>
+                  <span className="font-medium text-green-600">
+                    {pcs.length > 0 ? Math.round((availablePCs.length / pcs.length) * 100) : 0}%
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
