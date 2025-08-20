@@ -22,7 +22,7 @@ class PCUsageController extends Controller
             $this->autoCompleteExpiredSessions();
 
             $activeUsage = PCUsage::with(['pc', 'student'])
-                ->active()
+                ->whereIn('status', ['active', 'paused'])
                 ->orderBy('start_time', 'desc')
                 ->get()
                 ->map(function ($usage) {
@@ -33,12 +33,14 @@ class PCUsageController extends Controller
                         'pc_row' => $usage->pc->row,
                         'student_id' => $usage->student_id,
                         'student_name' => $usage->student_name,
-                        'minutes_requested' => $usage->minutes_requested,
-                        'hours_requested' => ceil($usage->minutes_requested / 60), // For backward compatibility
                         'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
-                        'remaining_minutes' => $usage->remaining_time,
-                        'elapsed_minutes' => $usage->elapsed_time,
-                        'is_expired' => $usage->isExpired(),
+                        'actual_usage_duration' => $usage->current_usage_time,
+                        'total_pause_duration' => $usage->current_pause_duration,
+                        'formatted_usage_duration' => $usage->formatted_usage_duration,
+                        'formatted_pause_duration' => $usage->formatted_pause_duration,
+                        'is_paused' => $usage->is_paused,
+                        'pause_start_time' => $usage->pause_start_time ? $usage->pause_start_time->format('Y-m-d H:i:s') : null,
+                        'remaining_pause_time' => $usage->remaining_pause_time,
                         'status' => $usage->status
                     ];
                 });
@@ -58,7 +60,6 @@ class PCUsageController extends Controller
 
     /**
      * Get all PCs with their current usage status for students.
-     * This endpoint shows PC availability and remaining time without revealing student names.
      */
     public function getPCStatusForStudents(): JsonResponse
     {
@@ -69,9 +70,9 @@ class PCUsageController extends Controller
             // Get all PCs
             $pcs = PC::all();
             
-            // Get all active usage sessions
+            // Get all active usage sessions (including paused)
             $activeUsages = PCUsage::with('pc')
-                ->active()
+                ->whereIn('status', ['active', 'paused'])
                 ->get()
                 ->keyBy('pc_id');
 
@@ -85,10 +86,10 @@ class PCUsageController extends Controller
                     'status' => $pc->status,
                     'is_available' => $pc->status === 'active',
                     'is_in_use' => $pc->status === 'in-use',
-                    'remaining_minutes' => $activeUsage ? $activeUsage->remaining_time : 0,
-                    'elapsed_minutes' => $activeUsage ? $activeUsage->elapsed_time : 0,
+                    'usage_duration' => $activeUsage ? $activeUsage->current_usage_time : 0,
+                    'formatted_usage_duration' => $activeUsage ? $activeUsage->formatted_usage_duration : '0s',
+                    'is_paused' => $activeUsage ? $activeUsage->is_paused : false,
                     'start_time' => $activeUsage ? $activeUsage->start_time->format('Y-m-d H:i:s') : null,
-                    // Don't include student information for privacy
                 ];
             });
 
@@ -116,7 +117,7 @@ class PCUsageController extends Controller
 
             $activeUsage = PCUsage::with('pc')
                 ->where('student_id', $studentId)
-                ->active()
+                ->whereIn('status', ['active', 'paused'])
                 ->first();
 
             if (!$activeUsage) {
@@ -134,12 +135,14 @@ class PCUsageController extends Controller
                 'pc_row' => $activeUsage->pc->row,
                 'student_id' => $activeUsage->student_id,
                 'student_name' => $activeUsage->student_name,
-                'minutes_requested' => $activeUsage->minutes_requested,
-                'hours_requested' => ceil($activeUsage->minutes_requested / 60),
                 'start_time' => $activeUsage->start_time->format('Y-m-d H:i:s'),
-                'remaining_minutes' => $activeUsage->remaining_time,
-                'elapsed_minutes' => $activeUsage->elapsed_time,
-                'is_expired' => $activeUsage->isExpired(),
+                'actual_usage_duration' => $activeUsage->current_usage_time,
+                'total_pause_duration' => $activeUsage->current_pause_duration,
+                'formatted_usage_duration' => $activeUsage->formatted_usage_duration,
+                'formatted_pause_duration' => $activeUsage->formatted_pause_duration,
+                'is_paused' => $activeUsage->is_paused,
+                'pause_start_time' => $activeUsage->pause_start_time ? $activeUsage->pause_start_time->format('Y-m-d H:i:s') : null,
+                'remaining_pause_time' => $activeUsage->remaining_pause_time,
                 'status' => $activeUsage->status
             ];
 
@@ -157,27 +160,12 @@ class PCUsageController extends Controller
     }
 
     /**
-     * Auto-complete expired PC usage sessions.
+     * Auto-complete expired PC usage sessions (paused for more than 10 minutes).
      */
     private function autoCompleteExpiredSessions(): void
     {
         try {
-            $expiredSessions = PCUsage::with('pc')
-                ->active()
-                ->get()
-                ->filter(function ($usage) {
-                    return $usage->isExpired();
-                });
-
-            foreach ($expiredSessions as $session) {
-                $session->update([
-                    'status' => 'completed',
-                    'end_time' => Carbon::now()
-                ]);
-
-                // Update PC status back to active
-                $session->pc->update(['status' => 'active']);
-            }
+            PCUsage::cleanupExpiredSessions();
         } catch (\Exception $e) {
             // Log error but don't throw to avoid breaking the main request
             \Log::error('Error auto-completing expired sessions: ' . $e->getMessage());
@@ -185,20 +173,15 @@ class PCUsageController extends Controller
     }
 
     /**
-     * Set a PC in use by a student.
+     * Set a PC in use by a student (start session).
      */
     public function setPCInUse(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
                 'pc_id' => 'required|exists:pcs,id',
-                'student_id' => 'required|exists:users,student_id',
-                'minutes' => 'required|integer|min:5|max:480', // 5 minutes to 8 hours
-                'hours' => 'sometimes|integer|min:0|max:8' // For backward compatibility
+                'student_id' => 'required|exists:users,student_id'
             ]);
-
-            // Handle both minutes and hours input for backward compatibility
-            $totalMinutes = $validated['minutes'] ?? (($validated['hours'] ?? 1) * 60);
 
             // Check if PC is available
             $pc = PC::find($validated['pc_id']);
@@ -211,7 +194,7 @@ class PCUsageController extends Controller
 
             // Check if student already has an active session
             $existingUsage = PCUsage::where('student_id', $validated['student_id'])
-                ->active()
+                ->whereIn('status', ['active', 'paused'])
                 ->first();
 
             if ($existingUsage) {
@@ -229,10 +212,12 @@ class PCUsageController extends Controller
                 'pc_id' => $validated['pc_id'],
                 'student_id' => $validated['student_id'],
                 'student_name' => $student->name,
-                'minutes_requested' => $totalMinutes,
-                'hours_requested' => ceil($totalMinutes / 60), // For backward compatibility
                 'start_time' => Carbon::now(),
-                'status' => 'active'
+                'last_activity_time' => Carbon::now(),
+                'status' => 'active',
+                'is_paused' => false,
+                'actual_usage_duration' => 0,
+                'total_pause_duration' => 0
             ]);
 
             // Update PC status to in-use
@@ -244,11 +229,9 @@ class PCUsageController extends Controller
                     'id' => $usage->id,
                     'pc_name' => $pc->name,
                     'student_name' => $student->name,
-                    'minutes_requested' => $usage->minutes_requested,
-                    'hours_requested' => $usage->hours_requested,
                     'start_time' => $usage->start_time->format('Y-m-d H:i:s')
                 ],
-                'message' => 'PC set in use successfully'
+                'message' => 'PC session started successfully'
             ], 201);
 
         } catch (ValidationException $e) {
@@ -260,7 +243,118 @@ class PCUsageController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error setting PC in use: ' . $e->getMessage()
+                'message' => 'Error starting PC session: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Pause a PC usage session.
+     */
+    public function pauseUsage(Request $request, $id): JsonResponse
+    {
+        try {
+            $usage = PCUsage::find($id);
+
+            if (!$usage) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session not found'
+                ], 404);
+            }
+
+            if ($usage->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session is not active'
+                ], 400);
+            }
+
+            if ($usage->is_paused) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session is already paused'
+                ], 400);
+            }
+
+            if ($usage->pauseSession()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $usage->id,
+                        'status' => $usage->status,
+                        'is_paused' => $usage->is_paused,
+                        'pause_start_time' => $usage->pause_start_time->format('Y-m-d H:i:s'),
+                        'remaining_pause_time' => $usage->remaining_pause_time
+                    ],
+                    'message' => 'PC usage session paused successfully'
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to pause PC usage session'
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error pausing PC usage: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Resume a paused PC usage session.
+     */
+    public function resumeUsage(Request $request, $id): JsonResponse
+    {
+        try {
+            $usage = PCUsage::find($id);
+
+            if (!$usage) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session not found'
+                ], 404);
+            }
+
+            if ($usage->status !== 'paused') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session is not paused'
+                ], 400);
+            }
+
+            if (!$usage->is_paused) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PC usage session is not currently paused'
+                ], 400);
+            }
+
+            if ($usage->resumeSession()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $usage->id,
+                        'status' => $usage->status,
+                        'is_paused' => $usage->is_paused,
+                        'total_pause_duration' => $usage->total_pause_duration
+                    ],
+                    'message' => 'PC usage session resumed successfully'
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to resume PC usage session'
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error resuming PC usage: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -280,10 +374,10 @@ class PCUsageController extends Controller
                 ], 404);
             }
 
-            if ($usage->status !== 'active') {
+            if (!in_array($usage->status, ['active', 'paused'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'PC usage session is not active'
+                    'message' => 'PC usage session is not active or paused'
                 ], 400);
             }
 
@@ -291,6 +385,15 @@ class PCUsageController extends Controller
 
             return response()->json([
                 'success' => true,
+                'data' => [
+                    'id' => $usage->id,
+                    'status' => $usage->status,
+                    'end_time' => $usage->end_time->format('Y-m-d H:i:s'),
+                    'actual_usage_duration' => $usage->actual_usage_duration,
+                    'total_pause_duration' => $usage->total_pause_duration,
+                    'formatted_usage_duration' => $usage->formatted_usage_duration,
+                    'formatted_pause_duration' => $usage->formatted_pause_duration
+                ],
                 'message' => 'PC usage session completed successfully'
             ], 200);
 
@@ -317,10 +420,10 @@ class PCUsageController extends Controller
                 ], 404);
             }
 
-            if ($usage->status !== 'active') {
+            if (!in_array($usage->status, ['active', 'paused'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'PC usage session is not active'
+                    'message' => 'PC usage session is not active or paused'
                 ], 400);
             }
 
@@ -354,12 +457,13 @@ class PCUsageController extends Controller
                         'id' => $usage->id,
                         'student_id' => $usage->student_id,
                         'student_name' => $usage->student_name,
-                        'minutes_requested' => $usage->minutes_requested,
-                        'hours_requested' => $usage->hours_requested,
                         'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
                         'end_time' => $usage->end_time ? $usage->end_time->format('Y-m-d H:i:s') : null,
-                        'status' => $usage->status,
-                        'elapsed_minutes' => $usage->elapsed_time
+                        'actual_usage_duration' => $usage->actual_usage_duration,
+                        'total_pause_duration' => $usage->total_pause_duration,
+                        'formatted_usage_duration' => $usage->formatted_usage_duration,
+                        'formatted_pause_duration' => $usage->formatted_pause_duration,
+                        'status' => $usage->status
                     ];
                 });
 
@@ -393,12 +497,13 @@ class PCUsageController extends Controller
                         'pc_id' => $usage->pc_id,
                         'pc_name' => $usage->pc->name,
                         'pc_row' => $usage->pc->row,
-                        'minutes_requested' => $usage->minutes_requested,
-                        'hours_requested' => $usage->hours_requested,
                         'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
                         'end_time' => $usage->end_time ? $usage->end_time->format('Y-m-d H:i:s') : null,
-                        'status' => $usage->status,
-                        'elapsed_minutes' => $usage->elapsed_time
+                        'actual_usage_duration' => $usage->actual_usage_duration,
+                        'total_pause_duration' => $usage->total_pause_duration,
+                        'formatted_usage_duration' => $usage->formatted_usage_duration,
+                        'formatted_pause_duration' => $usage->formatted_pause_duration,
+                        'status' => $usage->status
                     ];
                 });
 
@@ -422,11 +527,12 @@ class PCUsageController extends Controller
     public function cleanupExpiredSessions(): JsonResponse
     {
         try {
-            $this->autoCompleteExpiredSessions();
+            $cleanedCount = PCUsage::cleanupExpiredSessions();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Expired sessions cleaned up successfully'
+                'data' => ['cleaned_sessions' => $cleanedCount],
+                'message' => "Cleaned up {$cleanedCount} expired sessions"
             ], 200);
 
         } catch (\Exception $e) {

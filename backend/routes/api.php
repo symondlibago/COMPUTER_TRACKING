@@ -39,12 +39,21 @@ Route::get('/pc-usage/active', [PCUsageController::class, 'getActiveUsage']);
 Route::post('/pc-usage/set-in-use', [PCUsageController::class, 'setPCInUse']);
 Route::patch('/pc-usage/{id}/complete', [PCUsageController::class, 'completeUsage']);
 Route::patch('/pc-usage/{id}/cancel', [PCUsageController::class, 'cancelUsage']);
+
+// New pause/resume functionality routes
+Route::patch('/pc-usage/{id}/pause', [PCUsageController::class, 'pauseUsage']);
+Route::patch('/pc-usage/{id}/resume', [PCUsageController::class, 'resumeUsage']);
+
+// History and status routes
 Route::get('/pc-usage/pc/{pcId}/history', [PCUsageController::class, 'getPCUsageHistory']);
 Route::get('/pc-usage/student/{studentId}/history', [PCUsageController::class, 'getStudentUsageHistory']);
 
-// New routes for student portal
+// Routes for student portal
 Route::get('/pc-status/students', [PCUsageController::class, 'getPCStatusForStudents']);
 Route::get('/student/{studentId}/active-usage', [PCUsageController::class, 'getStudentActiveUsage']);
+
+// Cleanup route
+Route::post('/pc-usage/cleanup-expired', [PCUsageController::class, 'cleanupExpiredSessions']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

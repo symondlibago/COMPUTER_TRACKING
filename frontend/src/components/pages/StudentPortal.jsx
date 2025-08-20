@@ -16,7 +16,9 @@ import {
   RefreshCw,
   MapPin,
   StopCircle,
-  LogOut
+  LogOut,
+  Pause,
+  Play
 } from 'lucide-react';
 import API_BASE_URL from './Config';
 
@@ -29,7 +31,6 @@ function StudentPortal() {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [remainingTime, setRemainingTime] = useState(0);
 
   // Check for logged in user on component mount
   useEffect(() => {
@@ -53,31 +54,16 @@ function StudentPortal() {
     }
   }, [navigate]);
 
-  // Real-time timer for remaining time
+  // Real-time timer for updating usage duration
   useEffect(() => {
     let interval = null;
-    if (studentActiveUsage && remainingTime > 0) {
+    if (studentActiveUsage && (studentActiveUsage.status === 'active' || studentActiveUsage.status === 'paused')) {
       interval = setInterval(() => {
-        setRemainingTime(prevTime => {
-          const newTime = Math.max(0, prevTime - 1);
-          if (newTime === 0) {
-            // Time expired, refresh data
-            fetchStudentActiveUsage();
-          }
-          return newTime;
-        });
-      }, 60000); // Update every minute
+        // Update student active usage every second for real-time tracking
+        fetchStudentActiveUsage();
+      }, 1000);
     }
     return () => clearInterval(interval);
-  }, [studentActiveUsage, remainingTime]);
-
-  // Update remaining time when studentActiveUsage changes
-  useEffect(() => {
-    if (studentActiveUsage && studentActiveUsage.remaining_minutes > 0) {
-      setRemainingTime(studentActiveUsage.remaining_minutes);
-    } else {
-      setRemainingTime(0);
-    }
   }, [studentActiveUsage]);
 
   // Fetch PC status for students with fallback
@@ -110,8 +96,9 @@ function StudentPortal() {
             ...pc,
             is_available: pc.status === 'active',
             is_in_use: pc.status === 'in-use',
-            remaining_minutes: 0,
-            elapsed_minutes: 0,
+            usage_duration: 0,
+            formatted_usage_duration: '0s',
+            is_paused: false,
             start_time: null
           }));
         }
@@ -203,20 +190,6 @@ function StudentPortal() {
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
   };
 
-  // Format minutes to readable time
-  const formatMinutes = (minutes) => {
-    if (!minutes || minutes <= 0) return '0m';
-    if (minutes < 60) {
-      return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (mins === 0) {
-      return `${hours}h`;
-    }
-    return `${hours}h ${mins}m`;
-  };
-
   // Handle end session
   const handleEndSession = async () => {
     if (!studentActiveUsage) {
@@ -239,7 +212,6 @@ function StudentPortal() {
       if (response.ok) {
         showAlert('success', 'Session ended successfully!');
         setStudentActiveUsage(null);
-        setRemainingTime(0);
         // Refresh all data
         fetchPCStatus();
         fetchActiveUsage();
@@ -289,7 +261,10 @@ function StudentPortal() {
   // Get PC status text
   const getStatusText = (pc) => {
     if (pc.is_available || pc.status === 'active') return 'Available';
-    if (pc.is_in_use || pc.status === 'in-use') return 'In Use';
+    if (pc.is_in_use || pc.status === 'in-use') {
+      if (pc.is_paused) return 'In Use (Paused)';
+      return 'In Use';
+    }
     return 'Unavailable';
   };
 
@@ -396,6 +371,12 @@ function StudentPortal() {
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Monitor className="h-5 w-5" />
                 Active Session - {studentActiveUsage.pc_name}
+                {studentActiveUsage.is_paused && (
+                  <span className="ml-2 text-orange-600 text-sm font-normal flex items-center">
+                    <Pause className="h-4 w-4 mr-1" />
+                    Paused
+                  </span>
+                )}
               </CardTitle>
               <CardDescription>
                 Row {studentActiveUsage.pc_row} • Started at {new Date(studentActiveUsage.start_time).toLocaleTimeString()}
@@ -405,22 +386,22 @@ function StudentPortal() {
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-4xl font-bold text-primary mb-2">
-                    {formatMinutes(studentActiveUsage.elapsed_minutes)}
+                    {studentActiveUsage.formatted_usage_duration}
                   </div>
                   <p className="text-sm text-muted-foreground">Active Duration</p>
                 </div>
                 <div className="text-center">
-                  <div className={`text-2xl font-bold mb-2 ${
-                    remainingTime <= 10 ? 'text-red-500' : 'text-green-500'
-                  }`}>
-                    {formatMinutes(remainingTime)}
+                  <div className="text-2xl font-bold mb-2 text-orange-500">
+                    {studentActiveUsage.formatted_pause_duration}
                   </div>
-                  <p className="text-sm text-muted-foreground">Time Remaining</p>
-                  {remainingTime <= 10 && remainingTime > 0 && (
-                    <p className="text-xs text-red-500 mt-1">Session ending soon!</p>
+                  <p className="text-sm text-muted-foreground">Pause Duration</p>
+                  {studentActiveUsage.is_paused && studentActiveUsage.remaining_pause_time > 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Auto-end in: {Math.floor(studentActiveUsage.remaining_pause_time / 60)}m {studentActiveUsage.remaining_pause_time % 60}s
+                    </p>
                   )}
-                  {remainingTime === 0 && (
-                    <p className="text-xs text-red-500 mt-1">Session expired</p>
+                  {studentActiveUsage.is_paused && studentActiveUsage.remaining_pause_time === 0 && (
+                    <p className="text-xs text-red-500 mt-1">Session will end soon</p>
                   )}
                 </div>
                 <div className="flex flex-col gap-2">
@@ -433,7 +414,7 @@ function StudentPortal() {
                     {loading ? 'Ending...' : 'End Session'}
                   </Button>
                   <div className="text-xs text-muted-foreground text-center">
-                    Total: {formatMinutes(studentActiveUsage.minutes_requested)}
+                    Status: {studentActiveUsage.status === 'paused' ? 'Paused by Admin' : 'Active'}
                   </div>
                 </div>
               </div>
@@ -488,46 +469,29 @@ function StudentPortal() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {pcs.map((pc) => {
                     const StatusIcon = getStatusIcon(pc);
-                    const isAvailable = pc.is_available || pc.status === 'active';
-                    const isInUse = pc.is_in_use || pc.status === 'in-use';
-                    
                     return (
                       <motion.div
                         key={pc.id}
-                        whileHover={{ scale: 1.02 }}
-                        className={`p-4 border rounded-lg transition-all ${
-                          isAvailable 
-                            ? 'border-green-200 bg-green-50 hover:shadow-md' 
-                            : isInUse 
-                            ? 'border-blue-200 bg-blue-50'
-                            : 'border-gray-200 bg-gray-50'
-                        }`}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="border rounded-lg p-4 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium">{pc.name}</h4>
-                          <div className="flex items-center gap-2">
-                            <StatusIcon className={`h-5 w-5 ${getStatusColor(pc)}`} />
-                            <span className={`text-sm font-medium ${getStatusColor(pc)}`}>
-                              {getStatusText(pc)}
-                            </span>
-                          </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{pc.name}</h3>
+                          <StatusIcon className={`h-5 w-5 ${getStatusColor(pc)}`} />
                         </div>
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            <MapPin className="h-3 w-3 inline mr-1" />
                             {pc.row}
-                          </div>
-                          {isInUse && pc.remaining_minutes > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {formatMinutes(pc.remaining_minutes)} remaining
-                            </div>
-                          )}
-                          {isInUse && pc.elapsed_minutes > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Timer className="h-4 w-4" />
-                              {formatMinutes(pc.elapsed_minutes)} elapsed
-                            </div>
+                          </p>
+                          <p className={`text-sm font-medium ${getStatusColor(pc)}`}>
+                            {getStatusText(pc)}
+                          </p>
+                          {pc.formatted_usage_duration && pc.formatted_usage_duration !== '0s' && (
+                            <p className="text-xs text-muted-foreground">
+                              Usage: {pc.formatted_usage_duration}
+                            </p>
                           )}
                         </div>
                       </motion.div>
@@ -539,101 +503,77 @@ function StudentPortal() {
           </Card>
         </motion.div>
 
-        {/* Lab Status & Statistics */}
+        {/* Summary Cards */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-6"
+          className="space-y-4"
         >
-          {/* Lab Overview */}
+          {/* Available PCs */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
-                Lab Overview
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Available
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Total PCs</span>
-                  <span className="font-medium">{pcs.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-600">Available</span>
-                  <span className="font-medium text-green-600">{availablePCs.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">In Use</span>
-                  <span className="font-medium text-blue-600">{inUsePCs.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Unavailable</span>
-                  <span className="font-medium text-gray-600">
-                    {pcs.length - availablePCs.length - inUsePCs.length}
-                  </span>
-                </div>
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {availablePCs.length}
               </div>
+              <p className="text-sm text-muted-foreground">
+                Computers ready for use
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* In Use PCs */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-600" />
+                In Use
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {inUsePCs.length}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Computers currently being used
+              </p>
             </CardContent>
           </Card>
 
           {/* Active Sessions */}
-          {activeUsage.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Active Sessions ({activeUsage.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {activeUsage.map((usage) => (
-                    <div key={usage.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-blue-900">{usage.pc_name}</h4>
-                        <Activity className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="text-sm text-blue-700">
-                        <div className="flex justify-between">
-                          <span>{usage.pc_row}</span>
-                          <span>{formatMinutes(usage.remaining_minutes)} left</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Elapsed: {formatMinutes(usage.elapsed_minutes)}</span>
-                          <span>Total: {formatMinutes(usage.minutes_requested)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Stats */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Quick Stats
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-purple-600" />
+                Active Sessions
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Utilization Rate</span>
-                  <span className="font-medium">
-                    {pcs.length > 0 ? Math.round((inUsePCs.length / pcs.length) * 100) : 0}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Available Rate</span>
-                  <span className="font-medium text-green-600">
-                    {pcs.length > 0 ? Math.round((availablePCs.length / pcs.length) * 100) : 0}%
-                  </span>
-                </div>
+              <div className="text-3xl font-bold text-purple-600 mb-2">
+                {activeUsage.length}
               </div>
+              <p className="text-sm text-muted-foreground">
+                Students currently using PCs
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Logout Button */}
+          <Card>
+            <CardContent className="pt-6">
+              <Button 
+                onClick={handleLogout} 
+                variant="outline" 
+                className="w-full"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
