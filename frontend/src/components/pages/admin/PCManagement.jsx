@@ -27,7 +27,10 @@ import {
   Timer,
   Pause,
   Play,
-  StopCircle
+  StopCircle,
+  Loader2,
+  Computer,
+  Users
 } from 'lucide-react';
 import API_BASE_URL from '../Config';
 
@@ -35,7 +38,8 @@ function PCManagement() {
   const [pcs, setPcs] = useState([]);
   const [activeUsage, setActiveUsage] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('pcs'); // 'pcs' or 'usage'
+  const [loadingAction, setLoadingAction] = useState({ id: null, type: null });
+  const [activeSection, setActiveSection] = useState('pcs');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -46,6 +50,7 @@ function PCManagement() {
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [newPC, setNewPC] = useState({
     name: '',
     row: '',
@@ -189,6 +194,19 @@ function PCManagement() {
     }
   };
 
+  // Calculate PC statistics
+  const pcStats = {
+    total: pcs.length,
+    available: pcs.filter(pc => pc.status === 'active').length,
+    inUse: pcs.filter(pc => pc.status === 'in-use').length
+  };
+
+  // Calculate session statistics
+  const sessionStats = {
+    active: activeUsage.filter(session => session.status === 'active' && !session.is_paused).length,
+    paused: activeUsage.filter(session => session.status === 'paused' || session.is_paused).length
+  };
+
   // Filter PCs based on status and search query
   const filteredPCs = pcs.filter(pc => {
     const matchesStatus = statusFilter === 'all' || pc.status === statusFilter;
@@ -197,36 +215,51 @@ function PCManagement() {
     return matchesStatus && matchesSearch;
   });
 
+  // Filter active sessions based on search query
+  const filteredSessions = activeUsage.filter(session => {
+    const matchesSearch = session.pc_name.toLowerCase().includes(sessionSearchQuery.toLowerCase()) ||
+                         session.student_name.toLowerCase().includes(sessionSearchQuery.toLowerCase()) ||
+                         session.student_id.toLowerCase().includes(sessionSearchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
   const handleAddPC = async () => {
     if (!newPC.name || !newPC.row) {
-      showAlert('error', 'Please fill in all required fields');
+      showAlert("error", "Please fill in all required fields");
       return;
     }
-
+  
+    setLoading(true); // start loading
+  
     try {
       const response = await fetch(`${API_BASE_URL}/pcs`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: JSON.stringify(newPC)
+        body: JSON.stringify(newPC),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
-        showAlert('success', `PC "${newPC.name}" has been added successfully to ${newPC.row}!`);
-        setNewPC({ name: '', row: '', status: 'active' });
+        showAlert(
+          "success",
+          `PC "${newPC.name}" has been added successfully to ${newPC.row}!`
+        );
+        setNewPC({ name: "", row: "", status: "active" });
         setIsAddDialogOpen(false);
         fetchPCs();
       } else {
-        console.error('Add PC error:', data);
-        showAlert('error', data.message || 'Failed to add PC');
+        console.error("Add PC error:", data);
+        showAlert("error", data.message || "Failed to add PC");
       }
     } catch (error) {
-      console.error('Add PC error:', error);
-      showAlert('error', 'Error connecting to server');
+      console.error("Add PC error:", error);
+      showAlert("error", "Error connecting to server");
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
@@ -303,6 +336,7 @@ function PCManagement() {
     }
 
     try {
+      setLoading(true); // start loading
       const response = await fetch(`${API_BASE_URL}/pc-usage/set-in-use`, {
         method: 'POST',
         headers: {
@@ -331,87 +365,99 @@ function PCManagement() {
     } catch (error) {
       console.error('Set PC in use error:', error);
       showAlert('error', 'Error connecting to server');
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
   const handlePauseUsage = async (usageId) => {
+    setLoadingAction({ id: usageId, type: "pause" }); // start loading for this usage + action
     try {
       const response = await fetch(`${API_BASE_URL}/pc-usage/${usageId}/pause`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
-        showAlert('success', 'PC usage paused successfully!');
+        showAlert("success", "PC usage paused successfully!");
         fetchPCs();
         fetchActiveUsage();
       } else {
-        console.error('Pause usage error:', data);
-        showAlert('error', data.message || 'Failed to pause usage');
+        console.error("Pause usage error:", data);
+        showAlert("error", data.message || "Failed to pause usage");
       }
     } catch (error) {
-      console.error('Pause usage error:', error);
-      showAlert('error', 'Error connecting to server');
+      console.error("Pause usage error:", error);
+      showAlert("error", "Error connecting to server");
+    } finally {
+      setLoadingAction({ id: null, type: null }); // reset loading
     }
   };
 
   const handleResumeUsage = async (usageId) => {
+    setLoadingAction({ id: usageId, type: "resume" }); // start loading
+  
     try {
       const response = await fetch(`${API_BASE_URL}/pc-usage/${usageId}/resume`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
-        showAlert('success', 'PC usage resumed successfully!');
+        showAlert("success", "PC usage resumed successfully!");
         fetchPCs();
         fetchActiveUsage();
       } else {
-        console.error('Resume usage error:', data);
-        showAlert('error', data.message || 'Failed to resume usage');
+        console.error("Resume usage error:", data);
+        showAlert("error", data.message || "Failed to resume usage");
       }
     } catch (error) {
-      console.error('Resume usage error:', error);
-      showAlert('error', 'Error connecting to server');
+      console.error("Resume usage error:", error);
+      showAlert("error", "Error connecting to server");
+    } finally {
+      setLoadingAction({ id: null, type: null }); // reset loading
     }
   };
 
   const handleCompleteUsage = async (usageId) => {
+    setLoadingAction({ id: usageId, type: "complete" }); // start loading
     try {
       const response = await fetch(`${API_BASE_URL}/pc-usage/${usageId}/complete`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
-        showAlert('success', 'PC usage completed successfully!');
+        showAlert("success", "PC usage completed successfully!");
         fetchPCs();
         fetchActiveUsage();
       } else {
-        console.error('Complete usage error:', data);
-        showAlert('error', data.message || 'Failed to complete usage');
+        console.error("Complete usage error:", data);
+        showAlert("error", data.message || "Failed to complete usage");
       }
     } catch (error) {
-      console.error('Complete usage error:', error);
-      showAlert('error', 'Error connecting to server');
+      console.error("Complete usage error:", error);
+      showAlert("error", "Error connecting to server");
+    } finally {
+      setLoadingAction({ id: null, type: null }); // reset loading
     }
   };
-
+  
   const openSetInUseDialog = (pc) => {
     setSelectedPC(pc);
     setIsSetInUseDialogOpen(true);
@@ -450,15 +496,30 @@ function PCManagement() {
 
   // Format time to Philippines timezone (UTC+8)
   const formatPhilippinesTime = (dateString) => {
-    const date = new Date(dateString);
-    // Convert to Philippines time (UTC+8)
-    const philippinesTime = new Date(date.getTime() + (8 * 60 * 60 * 1000));
-    return philippinesTime.toLocaleTimeString('en-PH', { 
-      hour12: false, // Use 24-hour format
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Manila'
-    });
+    if (!dateString) return 'N/A';
+    
+    try {
+      // Handle Laravel datetime format (Y-m-d H:i:s) - assumes UTC
+      // Add 'Z' to indicate UTC if not present
+      const utcDateString = dateString.includes('Z') ? dateString : dateString + 'Z';
+      const date = new Date(utcDateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      // Convert to Philippine time (UTC+8)
+      return date.toLocaleTimeString('en-PH', { 
+        hour12: false, // Use 24-hour format
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Manila'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error, dateString);
+      return 'Invalid Date';
+    }
   };
 
   const getUsageStatusBadge = (usage) => {
@@ -585,6 +646,51 @@ function PCManagement() {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-6"
         >
+          {/* PC Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total PCs</p>
+                    <p className="text-2xl font-bold">{pcStats.total}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Computer className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Available PCs</p>
+                    <p className="text-2xl font-bold text-green-600">{pcStats.available}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">In Use PCs</p>
+                    <p className="text-2xl font-bold text-blue-600">{pcStats.inUse}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Activity className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Filters */}
           <Card>
             <CardHeader>
@@ -659,7 +765,7 @@ function PCManagement() {
                         <TableHead>Name</TableHead>
                         <TableHead>Row</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="w-[200px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -676,21 +782,22 @@ function PCManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
                                 {pc.status === 'active' && (
                                   <Button
                                     size="sm"
                                     onClick={() => openSetInUseDialog(pc)}
-                                    className="bg-blue-600 hover:bg-blue-700"
+                                    className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-7"
                                   >
                                     <User className="h-3 w-3 mr-1" />
-                                    Start Session
+                                    Start
                                   </Button>
                                 )}
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => openEditDialog(pc)}
+                                  className="text-xs px-2 py-1 h-7"
                                 >
                                   <Edit className="h-3 w-3" />
                                 </Button>
@@ -698,7 +805,7 @@ function PCManagement() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => openDeleteDialog(pc)}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="text-red-600 hover:text-red-700 text-xs px-2 py-1 h-7"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
@@ -723,23 +830,77 @@ function PCManagement() {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-6"
         >
+          {/* Session Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Active Sessions</p>
+                    <p className="text-2xl font-bold text-green-600">{sessionStats.active}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Play className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Paused Sessions</p>
+                    <p className="text-2xl font-bold text-orange-600">{sessionStats.paused}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Pause className="h-6 w-6 text-orange-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Session Search */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Search Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by PC name, student name, or student ID..."
+                  value={sessionSearchQuery}
+                  onChange={(e) => setSessionSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Timer className="h-5 w-5" />
-                Active Sessions ({activeUsage.length})
+                Active Sessions ({filteredSessions.length})
               </CardTitle>
               <CardDescription>
                 Monitor and control active PC usage sessions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activeUsage.length === 0 ? (
+              {filteredSessions.length === 0 ? (
                 <div className="text-center py-12">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Active Sessions</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    {sessionSearchQuery ? 'No Sessions Found' : 'No Active Sessions'}
+                  </h3>
                   <p className="text-muted-foreground">
-                    No computers are currently being used.
+                    {sessionSearchQuery 
+                      ? 'No sessions match your search criteria.'
+                      : 'No computers are currently being used.'
+                    }
                   </p>
                 </div>
               ) : (
@@ -753,11 +914,11 @@ function PCManagement() {
                         <TableHead>Usage Duration</TableHead>
                         <TableHead>Pause Duration</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="w-[200px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {activeUsage.map((usage) => (
+                      {filteredSessions.map((usage) => (
                         <TableRow key={usage.id}>
                           <TableCell className="font-medium">
                             {usage.pc_name}
@@ -772,7 +933,7 @@ function PCManagement() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {formatPhilippinesTime(usage.start_time)}
+                            {formatPhilippinesTime(usage.created_at)}
                           </TableCell>
                           <TableCell>
                             <div className="font-mono text-sm">
@@ -793,16 +954,20 @@ function PCManagement() {
                             {getUsageStatusBadge(usage)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               {usage.status === 'active' && !usage.is_paused && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handlePauseUsage(usage.id)}
-                                  className="text-orange-600 hover:text-orange-700"
+                                  disabled={loadingAction.id === usage.id && loadingAction.type === "pause"}
+                                  className="text-orange-600 hover:text-orange-700 text-xs px-2 py-1 h-7"
                                 >
-                                  <Pause className="h-3 w-3 mr-1" />
-                                  Pause
+                                  {loadingAction.id === usage.id && loadingAction.type === "pause" ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Pause className="h-3 w-3" />
+                                  )}
                                 </Button>
                               )}
                               {usage.status === 'paused' && usage.is_paused && (
@@ -810,20 +975,28 @@ function PCManagement() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleResumeUsage(usage.id)}
-                                  className="text-green-600 hover:text-green-700"
+                                  disabled={loadingAction.id === usage.id && loadingAction.type === "resume"}
+                                  className="text-green-600 hover:text-green-700 text-xs px-2 py-1 h-7"
                                 >
-                                  <Play className="h-3 w-3 mr-1" />
-                                  Resume
+                                  {loadingAction.id === usage.id && loadingAction.type === "resume" ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Play className="h-3 w-3" />
+                                  )}
                                 </Button>
                               )}
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleCompleteUsage(usage.id)}
-                                className="text-red-600 hover:text-red-700"
+                                disabled={loadingAction.id === usage.id && loadingAction.type === "complete"}
+                                className="text-red-600 hover:text-red-700 text-xs px-2 py-1 h-7"
                               >
-                                <StopCircle className="h-3 w-3 mr-1" />
-                                End
+                                {loadingAction.id === usage.id && loadingAction.type === "complete" ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <StopCircle className="h-3 w-3" />
+                                )}
                               </Button>
                             </div>
                           </TableCell>
@@ -837,6 +1010,8 @@ function PCManagement() {
           </Card>
         </motion.div>
       )}
+
+
 
       {/* Add PC Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -861,17 +1036,29 @@ function PCManagement() {
               <Label htmlFor="pc-row">Row</Label>
               <Input
                 id="pc-row"
-                placeholder="e.g., Row A"
+                placeholder="e.g., 1"
                 value={newPC.row}
                 onChange={(e) => setNewPC({ ...newPC, row: e.target.value })}
               />
+            </div>
+            <div>
+              <Label htmlFor="pc-status">Status</Label>
+              <Select value={newPC.status} onValueChange={(value) => setNewPC({ ...newPC, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Available</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddPC}>
-                Add PC
+              <Button onClick={handleAddPC} disabled={loading}>
+                {loading ? "Adding..." : "Add PC"}
               </Button>
             </div>
           </div>
@@ -884,7 +1071,7 @@ function PCManagement() {
           <DialogHeader>
             <DialogTitle>Edit PC</DialogTitle>
             <DialogDescription>
-              Update the computer workstation information.
+              Update the PC information.
             </DialogDescription>
           </DialogHeader>
           {editingPC && (
@@ -907,16 +1094,14 @@ function PCManagement() {
               </div>
               <div>
                 <Label htmlFor="edit-pc-status">Status</Label>
-                <Select
-                  value={editingPC.status}
-                  onValueChange={(value) => setEditingPC({ ...editingPC, status: value })}
-                >
+                <Select value={editingPC.status} onValueChange={(value) => setEditingPC({ ...editingPC, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Available</SelectItem>
                     <SelectItem value="in-use">In Use</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1020,8 +1205,11 @@ function PCManagement() {
                 <Button variant="outline" onClick={() => setIsSetInUseDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSetPCInUse} disabled={!setInUseForm.studentId}>
-                  Start Session
+                <Button 
+                  onClick={handleSetPCInUse} 
+                  disabled={!setInUseForm.studentId || loading}
+                >
+                  {loading ? "Starting..." : "Start Session"}
                 </Button>
               </div>
             </div>

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique()->comment('PC identifier like PC-001, PC-002');
             $table->string('row', 100)->comment('Row location like Row 1, Row 2');
-            $table->enum('status', ['active', 'in-use'])->default('active')->comment('PC status');
+            $table->enum('status', ['active', 'in-use','reserved'])->default('active')->comment('PC status');
             $table->timestamps();
             
             // Add indexes for better performance

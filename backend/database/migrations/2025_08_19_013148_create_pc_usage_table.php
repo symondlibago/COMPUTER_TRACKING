@@ -20,7 +20,9 @@ return new class extends Migration
             $table->timestamp('start_time');
             $table->timestamp('end_time')->nullable();
             $table->enum('status', ['active', 'completed', 'cancelled'])->default('active');
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
+
 
             // Foreign key constraints
             $table->foreign('pc_id')->references('id')->on('pcs')->onDelete('cascade');

@@ -39,7 +39,7 @@ class PCController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:pcs,name',
                 'row' => 'required|string|max:100',
-                'status' => 'sometimes|in:active,in-use'
+                'status' => 'sometimes|in:active,in-use,reserved'
             ]);
 
             $pc = PC::create([
@@ -96,7 +96,7 @@ class PCController extends Controller
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255|unique:pcs,name,' . $pc->id,
                 'row' => 'sometimes|string|max:100',
-                'status' => 'sometimes|in:active,in-use'
+                'status' => 'sometimes|in:active,in-use,reserved'
             ]);
 
             $pc->update($validated);

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useApp } from '../../../context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,88 +19,149 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import API_BASE_URL from '../Config';
 
 function UsageHistory() {
-  const { state } = useApp();
+  const [usageHistory, setUsageHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPC, setFilterPC] = useState('all');
   const [filterDateRange, setFilterDateRange] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [pcs, setPcs] = useState([]);
 
-  // Generate mock usage history data (in a real app, this would come from the backend)
-  const generateUsageHistory = () => {
-    const history = [];
-    const now = new Date();
+  // Format time to Philippines timezone (UTC+8)
+  const formatPhilippinesTime = (dateString) => {
+    if (!dateString) return 'N/A';
     
-    // Add current active sessions
-    state.pcs.forEach(pc => {
-      if (pc.currentUser) {
-        history.push({
-          id: `current-${pc.id}`,
-          studentName: pc.currentUser.name,
-          studentId: pc.currentUser.studentId || 'N/A',
-          pcName: pc.name,
-          pcLocation: pc.location,
-          startTime: new Date(pc.currentUser.startTime),
-          endTime: null,
-          duration: Math.floor((now - new Date(pc.currentUser.startTime)) / (1000 * 60)),
-          status: 'active'
-        });
-      }
-    });
-
-    // Add some mock completed sessions
-    const mockSessions = [
-      {
-        id: 'session-1',
-        studentName: 'Alice Cooper',
-        studentId: 'STU001',
-        pcName: 'PC-001',
-        pcLocation: 'Lab A',
-        startTime: new Date(now.getTime() - 3 * 60 * 60 * 1000), // 3 hours ago
-        endTime: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
-        duration: 120,
-        status: 'completed'
-      },
-      {
-        id: 'session-2',
-        studentName: 'Bob Wilson',
-        studentId: 'STU002',
-        pcName: 'PC-003',
-        pcLocation: 'Lab B',
-        startTime: new Date(now.getTime() - 5 * 60 * 60 * 1000),
-        endTime: new Date(now.getTime() - 3.5 * 60 * 60 * 1000),
-        duration: 90,
-        status: 'completed'
-      },
-      {
-        id: 'session-3',
-        studentName: 'Carol Davis',
-        studentId: 'STU003',
-        pcName: 'PC-002',
-        pcLocation: 'Lab A',
-        startTime: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday
-        endTime: new Date(now.getTime() - 22 * 60 * 60 * 1000),
-        duration: 120,
-        status: 'completed'
-      },
-      {
-        id: 'session-4',
-        studentName: 'David Brown',
-        studentId: 'STU004',
-        pcName: 'PC-005',
-        pcLocation: 'Lab C',
-        startTime: new Date(now.getTime() - 48 * 60 * 60 * 1000), // 2 days ago
-        endTime: new Date(now.getTime() - 46 * 60 * 60 * 1000),
-        duration: 120,
-        status: 'completed'
-      }
-    ];
-
-    return [...history, ...mockSessions];
+    try {
+      const date = new Date(dateString);
+      // Convert to Philippines timezone (UTC+8)
+      const philippinesTime = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+      
+      return philippinesTime.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Invalid Date';
+    }
   };
 
-  const usageHistory = generateUsageHistory();
+  // Fetch PCs for filter dropdown
+  const fetchPCs = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pcs`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPcs(data.data || []);
+      } else {
+        console.error('Failed to fetch PCs');
+      }
+    } catch (error) {
+      console.error('Fetch PCs error:', error);
+    }
+  };
+
+  // Fetch usage history from backend
+  const fetchUsageHistory = async () => {
+    try {
+      setLoading(true);
+      
+      // First get active usage
+      const activeResponse = await fetch(`${API_BASE_URL}/pc-usage/active`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      let allUsageData = [];
+
+      if (activeResponse.ok) {
+        const activeData = await activeResponse.json();
+        const activeUsage = (activeData.data || []).map(session => ({
+          id: `active-${session.id}`,
+          studentName: session.student_name,
+          studentId: session.student_id,
+          pcName: session.pc_name,
+          pcLocation: session.pc_row,
+          startTime: new Date(session.created_at), // Use created_at as start time
+          endTime: null, // Active sessions don't have end time
+          duration: Math.floor(session.actual_usage_duration / 60), // Convert seconds to minutes
+          status: session.is_paused ? 'paused' : 'active',
+          created_at: session.created_at,
+          updated_at: session.created_at // For active sessions, updated_at is same as created_at
+        }));
+        allUsageData = [...allUsageData, ...activeUsage];
+      }
+
+      // Try to get completed usage history from all PCs
+      for (const pc of pcs) {
+        try {
+          const historyResponse = await fetch(`${API_BASE_URL}/pc-usage/pc/${pc.id}/history`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            const completedUsage = (historyData.data || []).map(session => ({
+              id: `history-${session.id}`,
+              studentName: session.student_name,
+              studentId: session.student_id,
+              pcName: pc.name,
+              pcLocation: pc.row,
+              startTime: new Date(session.created_at), // Use created_at as start time
+              endTime: session.updated_at ? new Date(session.updated_at) : null, // Use updated_at as end time
+              duration: Math.floor(session.actual_usage_duration / 60), // Convert seconds to minutes
+              status: session.status,
+              created_at: session.created_at,
+              updated_at: session.updated_at
+            }));
+            allUsageData = [...allUsageData, ...completedUsage];
+          }
+        } catch (error) {
+          console.error(`Error fetching history for PC ${pc.id}:`, error);
+        }
+      }
+
+      // Remove duplicates based on session ID
+      const uniqueUsage = allUsageData.filter((session, index, self) => 
+        index === self.findIndex(s => s.id === session.id)
+      );
+
+      setUsageHistory(uniqueUsage);
+    } catch (error) {
+      console.error('Fetch usage history error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPCs();
+  }, []);
+
+  useEffect(() => {
+    if (pcs.length > 0) {
+      fetchUsageHistory();
+    }
+  }, [pcs]);
 
   // Filter and search logic
   const filteredHistory = usageHistory.filter(session => {
@@ -163,7 +223,7 @@ function UsageHistory() {
       totalSessions,
       totalHours: Math.round(totalMinutes / 60),
       avgDuration,
-      activeSessions: usageHistory.filter(s => s.status === 'active').length
+      activeSessions: usageHistory.filter(s => s.status === 'active' || s.status === 'paused').length
     };
   };
 
@@ -176,8 +236,8 @@ function UsageHistory() {
       'Student ID': session.studentId,
       'PC Name': session.pcName,
       'Location': session.pcLocation,
-      'Start Time': session.startTime.toLocaleString(),
-      'End Time': session.endTime ? session.endTime.toLocaleString() : 'Active',
+      'Start Time': formatPhilippinesTime(session.created_at),
+      'End Time': session.updated_at ? formatPhilippinesTime(session.updated_at) : 'Active',
       'Duration': formatDuration(session.duration),
       'Status': session.status
     }));
@@ -185,6 +245,17 @@ function UsageHistory() {
     console.log('Exporting data:', csvData);
     alert('Export functionality would be implemented here');
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading usage history...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -256,86 +327,96 @@ function UsageHistory() {
 
       {/* Filters and Search */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Student, PC, or ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <Label>PC Filter</Label>
-              <Select value={filterPC} onValueChange={setFilterPC}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All PCs</SelectItem>
-                  {state.pcs.map(pc => (
-                    <SelectItem key={pc.id} value={pc.name}>{pc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Date Range</Label>
-              <Select value={filterDateRange} onValueChange={setFilterDateRange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Sort By</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Date</SelectItem>
-                  <SelectItem value="duration">Duration</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="pc">PC</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterPC('all');
-                  setFilterDateRange('all');
-                  setSortBy('date');
-                }}
-                className="w-full"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Filter className="h-5 w-5" />
+      Filters & Search
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-1 lg:flex lg:items-end lg:gap-3">
+      
+      {/* Search */}
+      <div className="flex-1 min-w-[250px]">
+        <Label htmlFor="search">Search</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="search"
+            placeholder="Student, PC, or ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {/* PC Filter */}
+      <div>
+        <Label>PC Filter</Label>
+        <Select value={filterPC} onValueChange={setFilterPC}>
+          <SelectTrigger className="min-w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All PCs</SelectItem>
+            {pcs.map(pc => (
+              <SelectItem key={pc.id} value={pc.name}>{pc.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Date Range */}
+      <div>
+        <Label>Date Range</Label>
+        <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+          <SelectTrigger className="min-w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Sort By */}
+      <div>
+        <Label>Sort By</Label>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="min-w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date">Date</SelectItem>
+            <SelectItem value="duration">Duration</SelectItem>
+            <SelectItem value="student">Student</SelectItem>
+            <SelectItem value="pc">PC</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Clear Filters */}
+      <div>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setSearchTerm('');
+            setFilterPC('all');
+            setFilterDateRange('all');
+            setSortBy('date');
+          }}
+        >
+          Clear Filters
+        </Button>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 
       {/* Usage History Table */}
       <Card>
@@ -382,12 +463,14 @@ function UsageHistory() {
                     
                     <div className="text-right">
                       <Badge 
-                        className={session.status === 'active' ? 
-                          'bg-green-100 text-green-800' : 
+                        className={
+                          session.status === 'active' ? 'bg-green-100 text-green-800' :
+                          session.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }
                       >
-                        {session.status === 'active' ? 'Active' : 'Completed'}
+                        {session.status === 'active' ? 'Active' : 
+                         session.status === 'paused' ? 'Paused' : 'Completed'}
                       </Badge>
                     </div>
                   </div>
@@ -397,15 +480,15 @@ function UsageHistory() {
                       <div>
                         <p className="text-muted-foreground">Start Time</p>
                         <p className="font-medium">
-                          {session.startTime.toLocaleString()}
+                          {formatPhilippinesTime(session.created_at)}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">End Time</p>
                         <p className="font-medium">
-                          {session.endTime ? 
-                            session.endTime.toLocaleString() : 
-                            'Active'
+                          {session.status === 'completed' && session.updated_at ? 
+                            formatPhilippinesTime(session.updated_at) : 
+                            (session.status === 'active' || session.status === 'paused' ? 'Active' : 'N/A')
                           }
                         </p>
                       </div>
