@@ -18,7 +18,11 @@ import {
   StopCircle,
   LogOut,
   Pause,
-  Play
+  Play,
+  UserPlus,
+  UserMinus,
+  ListOrdered, // Changed from Queue
+  Hourglass
 } from 'lucide-react';
 import API_BASE_URL from './Config';
 
@@ -28,9 +32,21 @@ function StudentPortal() {
   const [pcs, setPcs] = useState([]);
   const [activeUsage, setActiveUsage] = useState([]);
   const [studentActiveUsage, setStudentActiveUsage] = useState(null);
+  const [queueStatus, setQueueStatus] = useState(null);
+  const [studentQueueStatus, setStudentQueueStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [queueLoading, setQueueLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Check for logged in user on component mount
   useEffect(() => {
@@ -54,17 +70,22 @@ function StudentPortal() {
     }
   }, [navigate]);
 
-  // Real-time timer for updating usage duration
+  // Real-time timer for updating usage duration and queue status
   useEffect(() => {
     let interval = null;
-    if (studentActiveUsage && (studentActiveUsage.status === 'active' || studentActiveUsage.status === 'paused')) {
+    if (currentUser) {
       interval = setInterval(() => {
-        // Update student active usage every second for real-time tracking
-        fetchStudentActiveUsage();
+        // Update student active usage and queue status every second for real-time tracking
+        if (studentActiveUsage && (studentActiveUsage.status === 'active' || studentActiveUsage.status === 'paused')) {
+          fetchStudentActiveUsage();
+        }
+        if (studentQueueStatus && studentQueueStatus.status === 'assigned') {
+          fetchStudentQueueStatus();
+        }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [studentActiveUsage]);
+  }, [currentUser, studentActiveUsage, studentQueueStatus]);
 
   // Fetch PC status for students with fallback
   const fetchPCStatus = async () => {
@@ -163,12 +184,68 @@ function StudentPortal() {
     }
   };
 
+  // Fetch queue status
+  const fetchQueueStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/status`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Queue Status Data:', data.data); // Debug log
+        setQueueStatus(data.data);
+      } else {
+        console.error('Failed to fetch queue status');
+        setQueueStatus(null);
+      }
+    } catch (error) {
+      console.error('Fetch queue status error:', error);
+      setQueueStatus(null);
+    }
+  };
+
+  // Fetch student's queue status
+  const fetchStudentQueueStatus = async () => {
+    if (!currentUser || !currentUser.student_id) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/student/${currentUser.student_id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Student Queue Status Data:', data.data); // Debug log
+        setStudentQueueStatus(data.data);
+      } else {
+        console.error('Failed to fetch student queue status');
+        setStudentQueueStatus(null);
+      }
+    } catch (error) {
+      console.error('Fetch student queue status error:', error);
+      setStudentQueueStatus(null);
+    }
+  };
+
   // Initial data fetch and setup interval
   useEffect(() => {
     if (currentUser) {
       const loadData = async () => {
         setLoading(true);
-        await Promise.all([fetchPCStatus(), fetchActiveUsage(), fetchStudentActiveUsage()]);
+        await Promise.all([
+          fetchPCStatus(), 
+          fetchActiveUsage(), 
+          fetchStudentActiveUsage(),
+          fetchQueueStatus(),
+          fetchStudentQueueStatus()
+        ]);
         setLoading(false);
       };
 
@@ -179,6 +256,8 @@ function StudentPortal() {
         fetchPCStatus();
         fetchActiveUsage();
         fetchStudentActiveUsage();
+        fetchQueueStatus();
+        fetchStudentQueueStatus();
       }, 30000);
 
       return () => clearInterval(interval);
@@ -188,6 +267,82 @@ function StudentPortal() {
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+  };
+
+  // Handle join queue
+  const handleJoinQueue = async () => {
+    if (!currentUser || !currentUser.student_id) {
+      showAlert('error', 'User information not available');
+      return;
+    }
+
+    setQueueLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: currentUser.student_id
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', 'Successfully joined the auto queue!');
+        // Refresh queue data
+        fetchQueueStatus();
+        fetchStudentQueueStatus();
+      } else {
+        showAlert('error', data.message || 'Failed to join queue');
+      }
+    } catch (error) {
+      console.error('Join queue error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
+  // Handle leave queue
+  const handleLeaveQueue = async () => {
+    if (!currentUser || !currentUser.student_id) {
+      showAlert('error', 'User information not available');
+      return;
+    }
+
+    setQueueLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: currentUser.student_id
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', 'Successfully left the queue');
+        // Refresh queue data
+        fetchQueueStatus();
+        fetchStudentQueueStatus();
+      } else {
+        showAlert('error', data.message || 'Failed to leave queue');
+      }
+    } catch (error) {
+      console.error('Leave queue error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setQueueLoading(false);
+    }
   };
 
   // Handle end session
@@ -216,6 +371,7 @@ function StudentPortal() {
         fetchPCStatus();
         fetchActiveUsage();
         fetchStudentActiveUsage();
+        fetchQueueStatus();
       } else {
         showAlert('error', data.message || 'Failed to end session');
       }
@@ -232,7 +388,13 @@ function StudentPortal() {
     if (!currentUser) return;
     
     setLoading(true);
-    await Promise.all([fetchPCStatus(), fetchActiveUsage(), fetchStudentActiveUsage()]);
+    await Promise.all([
+      fetchPCStatus(), 
+      fetchActiveUsage(), 
+      fetchStudentActiveUsage(),
+      fetchQueueStatus(),
+      fetchStudentQueueStatus()
+    ]);
     setLoading(false);
     showAlert('success', 'Data refreshed successfully');
   };
@@ -248,6 +410,7 @@ function StudentPortal() {
   const getStatusIcon = (pc) => {
     if (pc.is_available || pc.status === 'active') return CheckCircle;
     if (pc.is_in_use || pc.status === 'in-use') return Activity;
+    if (pc.status === 'reserved') return Hourglass;
     return Settings;
   };
 
@@ -255,6 +418,7 @@ function StudentPortal() {
   const getStatusColor = (pc) => {
     if (pc.is_available || pc.status === 'active') return 'text-green-600';
     if (pc.is_in_use || pc.status === 'in-use') return 'text-blue-600';
+    if (pc.status === 'reserved') return 'text-orange-600';
     return 'text-gray-600';
   };
 
@@ -265,12 +429,39 @@ function StudentPortal() {
       if (pc.is_paused) return 'In Use (Paused)';
       return 'In Use';
     }
+    if (pc.status === 'reserved') return 'Reserved';
     return 'Unavailable';
+  };
+
+  // Calculate real-time countdown for assigned entries
+  const getRealTimeCountdown = (expiresAt) => {
+    if (!expiresAt) return { seconds: 0, formatted: 'Expired', isExpired: true };
+    
+    const expireTime = new Date(expiresAt);
+    const remainingMs = expireTime.getTime() - currentTime.getTime();
+    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+    
+    if (remainingSeconds <= 0) {
+      return { seconds: 0, formatted: 'Expired', isExpired: true };
+    }
+    
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    
+    return {
+      seconds: remainingSeconds,
+      formatted: minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`,
+      isExpired: false
+    };
   };
 
   // Get available and in-use PCs
   const availablePCs = pcs.filter(pc => pc.is_available || pc.status === 'active');
   const inUsePCs = pcs.filter(pc => pc.is_in_use || pc.status === 'in-use');
+  const reservedPCs = pcs.filter(pc => pc.status === 'reserved');
+
+  // Check if auto queue should be shown (all PCs are in use or reserved)
+  const shouldShowAutoQueue = availablePCs.length === 0 && pcs.length > 0;
 
   // Show loading if no current user yet
   if (!currentUser) {
@@ -359,6 +550,118 @@ function StudentPortal() {
         </div>
       </div>
 
+      {/* Auto Queue Section */}
+      {shouldShowAutoQueue && !studentActiveUsage && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8"
+        >
+          <Card className="border-orange-300 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-700">
+                <ListOrdered className="h-5 w-5" /> {/* Changed from Queue */}
+                Auto Queue Available
+              </CardTitle>
+              <CardDescription>
+                All PCs are currently in use. Join the auto queue to be notified when a PC becomes available.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {studentQueueStatus ? (
+                <div className="space-y-4">
+                  {studentQueueStatus.status === 'waiting' && (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-orange-700">You are in the queue</p>
+                        <p className="text-sm text-muted-foreground">
+                          Position: #{studentQueueStatus.queue_position} • 
+                          Joined at {new Date(studentQueueStatus.queued_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleLeaveQueue} 
+                        variant="outline" 
+                        disabled={queueLoading}
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        {queueLoading ? 'Leaving...' : 'Leave Queue'}
+                      </Button>
+                    </div>
+                  )}
+                  {studentQueueStatus.status === 'assigned' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-green-700">PC Assigned!</p>
+                          <p className="text-sm text-muted-foreground">
+                            {studentQueueStatus.assigned_pc_name} • 
+                            Assigned at {new Date(studentQueueStatus.assigned_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {(() => {
+                            const countdown = getRealTimeCountdown(studentQueueStatus.expires_at);
+                            return (
+                              <div className="flex items-center gap-2">
+                                <Timer className="h-5 w-5" />
+                                <div>
+                                  <p className={`text-2xl font-bold ${
+                                    countdown.isExpired ? 'text-red-600' : 
+                                    countdown.seconds <= 60 ? 'text-red-600' : 
+                                    countdown.seconds <= 180 ? 'text-orange-600' : 'text-green-600'
+                                  }`}>
+                                    {countdown.formatted}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">Time remaining</p>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <Alert className="border-green-500 bg-green-50">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-green-800">
+                          <strong>Go to the admin now!</strong> You have 5 minutes to check in with the admin 
+                          to start using {studentQueueStatus.assigned_pc_name}. If you don't check in within 
+                          the time limit, you'll be moved to the end of the queue.
+                        </AlertDescription>
+                      </Alert>
+                      <Button 
+                        onClick={handleLeaveQueue} 
+                        variant="outline" 
+                        disabled={queueLoading}
+                        className="w-full"
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        {queueLoading ? 'Leaving...' : 'Cancel Assignment'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Join the auto queue</p>
+                    <p className="text-sm text-muted-foreground">
+                      {queueStatus ? `${queueStatus.total_in_queue} students currently in queue` : 'Get notified when a PC becomes available'}
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleJoinQueue} 
+                    disabled={queueLoading}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {queueLoading ? 'Joining...' : 'Join Queue'}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Student Active Session or No Active Session */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -429,6 +732,7 @@ function StudentPortal() {
               </CardTitle>
               <CardDescription>
                 You don't have any active PC usage at the moment.
+                {shouldShowAutoQueue && ' Join the auto queue above to get notified when a PC becomes available.'}
               </CardDescription>
             </CardHeader>
           </Card>
@@ -545,23 +849,43 @@ function StudentPortal() {
             </CardContent>
           </Card>
 
-          {/* Active Sessions */}
+          {/* Reserved PCs */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5 text-purple-600" />
-                Active Sessions
+                <Hourglass className="h-5 w-5 text-orange-600" />
+                Reserved
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600 mb-2">
-                {activeUsage.length}
+              <div className="text-3xl font-bold text-orange-600 mb-2">
+                {reservedPCs.length}
               </div>
               <p className="text-sm text-muted-foreground">
-                Students currently using PCs
+                Computers reserved for queue
               </p>
             </CardContent>
           </Card>
+
+          {/* Queue Status */}
+          {queueStatus && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ListOrdered className="h-5 w-5" /> {/* Changed from Queue */}
+                  Queue
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600 mb-2">
+                  {queueStatus.total_in_queue}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Students in auto queue
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Logout Button */}
           <Card>

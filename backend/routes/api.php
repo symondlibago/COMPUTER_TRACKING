@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PCController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\PCUsageController;
+use App\Http\Controllers\PCQueueController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,20 @@ Route::get('/student/{studentId}/active-usage', [PCUsageController::class, 'getS
 
 // Cleanup route
 Route::post('/pc-usage/cleanup-expired', [PCUsageController::class, 'cleanupExpiredSessions']);
+
+// PC Queue Management routes
+Route::get('/pc-queue/status', [PCQueueController::class, 'getQueueStatus']);
+Route::get('/pc-queue/student/{studentId}', [PCQueueController::class, 'getStudentQueueStatus']);
+Route::post('/pc-queue/join', [PCQueueController::class, 'joinQueue']);
+Route::post('/pc-queue/leave', [PCQueueController::class, 'leaveQueue']);
+Route::post('/pc-queue/process', [PCQueueController::class, 'processQueue']);
+Route::post('/pc-queue/cleanup-expired', [PCQueueController::class, 'cleanupExpiredAssignments']);
+Route::get('/pc-queue/statistics', [PCQueueController::class, 'getQueueStatistics']);
+
+// Admin Queue Monitor routes
+Route::get('/pc-queue/monitor', [PCQueueController::class, 'getQueueMonitor']);
+Route::post('/pc-queue/{id}/check-in', [PCQueueController::class, 'checkInStudent']);
+Route::post('/pc-queue/{id}/expire', [PCQueueController::class, 'expireQueueEntry']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

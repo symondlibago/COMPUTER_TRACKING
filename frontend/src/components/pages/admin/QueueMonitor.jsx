@@ -1,26 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useApp } from '../../../context/AppContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Clock,
   Users,
-  ArrowUp,
-  ArrowDown,
-  X,
-  Play,
-  Pause,
-  RotateCcw,
-  AlertCircle,
   CheckCircle,
+  AlertCircle,
   Timer,
-  User
+  User,
+  RefreshCw,
+  UserCheck,
+  UserX,
+  Hourglass,
+  Monitor,
+  ListOrdered,
+  Activity
 } from 'lucide-react';
+import API_BASE_URL from '../Config';
 
 function QueueMonitor() {
-  const { state, dispatch, ActionTypes } = useApp();
+  const [queueData, setQueueData] = useState(null);
+  const [queueStats, setQueueStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update current time every second
@@ -31,60 +37,212 @@ function QueueMonitor() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleMoveUp = (queueId) => {
-    dispatch({
-      type: ActionTypes.MOVE_QUEUE_UP,
-      payload: queueId
-    });
-  };
-
-  const handleMoveDown = (queueId) => {
-    dispatch({
-      type: ActionTypes.MOVE_QUEUE_DOWN,
-      payload: queueId
-    });
-  };
-
-  const handleRemoveFromQueue = (queueId) => {
-    if (window.confirm('Are you sure you want to remove this student from the queue?')) {
-      dispatch({
-        type: ActionTypes.REMOVE_FROM_QUEUE,
-        payload: queueId
+  // Fetch queue monitor data
+  const fetchQueueMonitor = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/monitor`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Queue Monitor Data:', data.data);
+        setQueueData(data.data);
+      } else {
+        console.error('Failed to fetch queue monitor data');
+        showAlert('error', 'Failed to fetch queue monitor data');
+      }
+    } catch (error) {
+      console.error('Fetch queue monitor error:', error);
+      showAlert('error', 'Error connecting to server');
     }
   };
 
-  const handleAssignToPC = (queueItem) => {
-    const availablePC = state.pcs.find(pc => pc.status === 'available');
-    if (availablePC) {
-      // Find the student
-      const student = state.students.find(s => s.id === queueItem.studentId) || {
-        id: queueItem.studentId,
-        name: queueItem.studentName
-      };
+  // Fetch queue statistics
+  const fetchQueueStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/statistics`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Queue Statistics:', data.data);
+        setQueueStats(data.data);
+      } else {
+        console.error('Failed to fetch queue statistics');
+      }
+    } catch (error) {
+      console.error('Fetch queue statistics error:', error);
+    }
+  };
 
-      // Assign PC
-      dispatch({
-        type: ActionTypes.ASSIGN_PC,
-        payload: {
-          pcId: availablePC.id,
-          user: {
-            ...student,
-            startTime: new Date()
-          }
+  // Initial data fetch and setup interval
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchQueueMonitor(), fetchQueueStats()]);
+      setLoading(false);
+    };
+
+    loadData();
+    
+    // Set up interval to refresh data every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchQueueMonitor();
+      fetchQueueStats();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+  };
+
+  // Handle check in student
+  const handleCheckInStudent = async (queueEntryId) => {
+    setActionLoading(prev => ({ ...prev, [queueEntryId]: true }));
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/${queueEntryId}/check-in`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
 
-      // Remove from queue
-      dispatch({
-        type: ActionTypes.REMOVE_FROM_QUEUE,
-        payload: queueItem.id
-      });
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', `${data.data.student_name} checked in successfully and PC usage started!`);
+        // Refresh data
+        fetchQueueMonitor();
+        fetchQueueStats();
+      } else {
+        showAlert('error', data.message || 'Failed to check in student');
+      }
+    } catch (error) {
+      console.error('Check in student error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [queueEntryId]: false }));
     }
   };
 
-  const getWaitTime = (queueTime) => {
-    const waitMinutes = Math.floor((currentTime - new Date(queueTime)) / (1000 * 60));
+  // Handle expire queue entry
+  const handleExpireQueueEntry = async (queueEntryId) => {
+    if (!window.confirm('Are you sure you want to expire this assignment? The student will be moved to the end of the queue.')) {
+      return;
+    }
+
+    setActionLoading(prev => ({ ...prev, [`expire_${queueEntryId}`]: true }));
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/${queueEntryId}/expire`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', 'Assignment expired and student moved to end of queue');
+        // Refresh data
+        fetchQueueMonitor();
+        fetchQueueStats();
+      } else {
+        showAlert('error', data.message || 'Failed to expire assignment');
+      }
+    } catch (error) {
+      console.error('Expire assignment error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`expire_${queueEntryId}`]: false }));
+    }
+  };
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setLoading(true);
+    await Promise.all([fetchQueueMonitor(), fetchQueueStats()]);
+    setLoading(false);
+    showAlert('success', 'Data refreshed successfully');
+  };
+
+  // Process queue manually
+  const handleProcessQueue = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', 'Queue processed successfully');
+        // Refresh data
+        fetchQueueMonitor();
+        fetchQueueStats();
+      } else {
+        showAlert('error', data.message || 'Failed to process queue');
+      }
+    } catch (error) {
+      console.error('Process queue error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cleanup expired assignments
+  const handleCleanupExpired = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/cleanup-expired`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('success', `Cleaned up ${data.data.expired_count} expired assignments`);
+        // Refresh data
+        fetchQueueMonitor();
+        fetchQueueStats();
+      } else {
+        showAlert('error', data.message || 'Failed to cleanup expired assignments');
+      }
+    } catch (error) {
+      console.error('Cleanup expired error:', error);
+      showAlert('error', 'Error connecting to server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getWaitTime = (queuedAt) => {
+    const waitMinutes = Math.floor((currentTime - new Date(queuedAt)) / (1000 * 60));
     if (waitMinutes < 1) return 'Just now';
     if (waitMinutes < 60) return `${waitMinutes}m`;
     const hours = Math.floor(waitMinutes / 60);
@@ -92,16 +250,42 @@ function QueueMonitor() {
     return `${hours}h ${minutes}m`;
   };
 
-  const getEstimatedWaitTime = (position) => {
-    // Rough estimate: 30 minutes per person ahead
-    const estimatedMinutes = position * 30;
-    if (estimatedMinutes < 60) return `~${estimatedMinutes}m`;
-    const hours = Math.floor(estimatedMinutes / 60);
-    const minutes = estimatedMinutes % 60;
-    return `~${hours}h ${minutes}m`;
+  // Calculate real-time countdown for assigned entries
+  const getRealTimeCountdown = (expiresAt) => {
+    if (!expiresAt) return { seconds: 0, formatted: 'Expired', isExpired: true };
+    
+    const expireTime = new Date(expiresAt);
+    const remainingMs = expireTime.getTime() - currentTime.getTime();
+    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+    
+    if (remainingSeconds <= 0) {
+      return { seconds: 0, formatted: 'Expired', isExpired: true };
+    }
+    
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    
+    return {
+      seconds: remainingSeconds,
+      formatted: minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`,
+      isExpired: false
+    };
   };
 
-  const availablePCs = state.pcs.filter(pc => pc.status === 'available').length;
+  if (loading && !queueData) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-center min-h-screen"
+      >
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading queue monitor...</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -109,16 +293,51 @@ function QueueMonitor() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {/* Success/Error Alert */}
+      <AnimatePresence>
+        {alert.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 z-50 max-w-md"
+          >
+            <Alert className={`${
+              alert.type === 'success' 
+                ? 'border-green-500 bg-green-50 shadow-lg' 
+                : 'border-red-500 bg-red-50 shadow-lg'
+            }`}>
+              {alert.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              )}
+              <AlertDescription className={`${
+                alert.type === 'success' ? 'text-green-800' : 'text-red-800'
+              } font-medium`}>
+                {alert.message}
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Queue Monitor</h1>
           <p className="text-muted-foreground">
-            Monitor and manage the student queue system
+            Monitor and manage the auto queue system
           </p>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Last updated: {currentTime.toLocaleTimeString()}
+        <div className="flex gap-2">
+          <Button onClick={handleRefresh} variant="outline" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <div className="text-sm text-muted-foreground flex items-center">
+            Last updated: {currentTime.toLocaleTimeString()}
+          </div>
         </div>
       </div>
 
@@ -128,10 +347,25 @@ function QueueMonitor() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Queue Length</p>
-                <p className="text-2xl font-bold">{state.queue.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Waiting in Queue</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {queueStats?.queue_stats?.waiting || 0}
+                </p>
               </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
+              <ListOrdered className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Assigned PCs</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {queueStats?.queue_stats?.assigned || 0}
+                </p>
+              </div>
+              <Hourglass className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -140,7 +374,9 @@ function QueueMonitor() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Available PCs</p>
-                <p className="text-2xl font-bold text-green-600">{availablePCs}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {queueStats?.pc_stats?.available || 0}
+                </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
@@ -150,132 +386,166 @@ function QueueMonitor() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Wait Time</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {state.queue.length > 0 ? 
-                    getWaitTime(state.queue[Math.floor(state.queue.length / 2)]?.queueTime || Date.now()) : 
-                    '0m'
-                  }
+                <p className="text-sm font-medium text-muted-foreground">In Use PCs</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {queueStats?.pc_stats?.in_use || 0}
                 </p>
               </div>
-              <Timer className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Next Assignment</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {availablePCs > 0 && state.queue.length > 0 ? 'Ready' : 'Waiting'}
-                </p>
-              </div>
-              <Play className="h-8 w-8 text-blue-500" />
+              <Activity className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Queue Management */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Queue List */}
+        {/* Assigned Students (Need Check-in) */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Current Queue
+                <UserCheck className="h-5 w-5" />
+                Students with Assigned PCs
               </CardTitle>
               <CardDescription>
-                Students waiting for computer access (FIFO order)
+                Students who have been assigned PCs and need to check in within 5 minutes
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {state.queue.length === 0 ? (
+              {!queueData?.assigned_entries || queueData.assigned_entries.length === 0 ? (
                 <div className="text-center py-12">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Queue is Empty</h3>
+                  <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Assigned Students</h3>
                   <p className="text-muted-foreground">
-                    No students are currently waiting for computer access.
+                    No students currently have assigned PCs waiting for check-in.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {state.queue.map((item, index) => (
+                  {queueData.assigned_entries.map((entry, index) => {
+                    const countdown = getRealTimeCountdown(entry.expires_at);
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-4 border border-primary bg-primary/5 rounded-lg"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                              <User className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">{entry.student_name}</h4>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>ID: {entry.student_id}</span>
+                                <span>PC: {entry.assigned_pc_name}</span>
+                                <span>Row: {entry.assigned_pc_row}</span>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm">
+                                <span className="text-muted-foreground">
+                                  Assigned: {new Date(entry.assigned_at).toLocaleTimeString()}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Timer className="h-4 w-4" />
+                                  <span className={`font-bold text-lg ${
+                                    countdown.isExpired ? 'text-red-600' : 
+                                    countdown.seconds <= 60 ? 'text-red-600' : 
+                                    countdown.seconds <= 180 ? 'text-orange-600' : 'text-green-600'
+                                  }`}>
+                                    {countdown.formatted}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${
+                              countdown.isExpired ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {countdown.isExpired ? 'Expired' : 'Assigned'}
+                            </Badge>
+                            
+                            <Button
+                              size="sm"
+                              onClick={() => handleCheckInStudent(entry.id)}
+                              disabled={actionLoading[entry.id]}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              {actionLoading[entry.id] ? 'Checking...' : 'Check In'}
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleExpireQueueEntry(entry.id)}
+                              disabled={actionLoading[`expire_${entry.id}`]}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <UserX className="h-3 w-3 mr-1" />
+                              {actionLoading[`expire_${entry.id}`] ? 'Expiring...' : 'Expire'}
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Waiting Queue */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Waiting Queue
+              </CardTitle>
+              <CardDescription>
+                Students waiting for PC assignment (FIFO order)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!queueData?.waiting_entries || queueData.waiting_entries.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Students Waiting</h3>
+                  <p className="text-muted-foreground">
+                    The waiting queue is currently empty.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {queueData.waiting_entries.map((entry, index) => (
                     <motion.div
-                      key={item.id}
+                      key={entry.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className={`p-4 border border-border rounded-lg ${
-                        index === 0 ? 'border-primary bg-primary/5' : ''
-                      }`}
+                      className="p-4 border rounded-lg"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            index === 0 ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {index + 1}
+                          <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
+                            {entry.queue_position}
                           </div>
                           <div>
-                            <h4 className="font-semibold">{item.studentName}</h4>
+                            <h4 className="font-semibold">{entry.student_name}</h4>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>Requested: {item.requestedHours}h</span>
-                              <span>Wait time: {getWaitTime(item.queueTime)}</span>
-                              <span>ETA: {getEstimatedWaitTime(index)}</span>
+                              <span>ID: {entry.student_id}</span>
+                              <span>Joined: {new Date(entry.queued_at).toLocaleTimeString()}</span>
+                              <span>Wait time: {getWaitTime(entry.queued_at)}</span>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          {index === 0 && (
-                            <Badge className="bg-green-100 text-green-800">
-                              Next in line
-                            </Badge>
-                          )}
-                          
-                          {/* Quick assign if PC available and first in queue */}
-                          {index === 0 && availablePCs > 0 && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleAssignToPC(item)}
-                              className="btn-energy"
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Assign PC
-                            </Button>
-                          )}
-                          
-                          {/* Queue management buttons */}
-                          <div className="flex gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMoveUp(item.id)}
-                              disabled={index === 0}
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMoveDown(item.id)}
-                              disabled={index === state.queue.length - 1}
-                            >
-                              <ArrowDown className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveFromQueue(item.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
+                        <Badge variant="outline">
+                          Waiting
+                        </Badge>
                       </div>
                     </motion.div>
                   ))}
@@ -285,75 +555,73 @@ function QueueMonitor() {
           </Card>
         </div>
 
-        {/* Queue Analytics & Controls */}
+        {/* Queue Management & Controls */}
         <div className="space-y-6">
-          {/* Queue Analytics */}
+          {/* Queue Summary */}
           <Card>
             <CardHeader>
-              <CardTitle>Queue Analytics</CardTitle>
+              <CardTitle>Queue Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm">Longest Wait</span>
-                <span className="font-medium">
-                  {state.queue.length > 0 ? 
-                    getWaitTime(Math.min(...state.queue.map(q => new Date(q.queueTime)))) : 
-                    '0m'
-                  }
+                <span className="text-sm">Total Waiting</span>
+                <span className="font-medium text-orange-600">
+                  {queueData?.total_waiting || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Average Request</span>
-                <span className="font-medium">
-                  {state.queue.length > 0 ? 
-                    Math.round(state.queue.reduce((sum, q) => sum + q.requestedHours, 0) / state.queue.length) : 
-                    0
-                  }h
+                <span className="text-sm">Total Assigned</span>
+                <span className="font-medium text-blue-600">
+                  {queueData?.total_assigned || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Total Hours Requested</span>
-                <span className="font-medium">
-                  {state.queue.reduce((sum, q) => sum + q.requestedHours, 0)}h
+                <span className="text-sm">Completed Today</span>
+                <span className="font-medium text-green-600">
+                  {queueStats?.queue_stats?.completed || 0}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Expired Today</span>
+                <span className="font-medium text-red-600">
+                  {queueStats?.queue_stats?.expired || 0}
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Queue Status */}
+          {/* PC Status */}
           <Card>
             <CardHeader>
-              <CardTitle>System Status</CardTitle>
+              <CardTitle>PC Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                {availablePCs > 0 ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
-                )}
+                <CheckCircle className="h-5 w-5 text-green-500" />
                 <div>
-                  <p className="font-medium">
-                    {availablePCs > 0 ? 'PCs Available' : 'All PCs Occupied'}
-                  </p>
+                  <p className="font-medium">Available</p>
                   <p className="text-sm text-muted-foreground">
-                    {availablePCs} of {state.pcs.length} computers ready
+                    {queueStats?.pc_stats?.available || 0} PCs ready
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                {state.queue.length === 0 ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <Clock className="h-5 w-5 text-orange-500" />
-                )}
+                <Hourglass className="h-5 w-5 text-orange-500" />
                 <div>
-                  <p className="font-medium">
-                    {state.queue.length === 0 ? 'No Queue' : `${state.queue.length} in Queue`}
-                  </p>
+                  <p className="font-medium">Reserved</p>
                   <p className="text-sm text-muted-foreground">
-                    {state.queue.length === 0 ? 'All students served' : 'Students waiting'}
+                    {queueStats?.pc_stats?.reserved || 0} PCs reserved
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Activity className="h-5 w-5 text-purple-500" />
+                <div>
+                  <p className="font-medium">In Use</p>
+                  <p className="text-sm text-muted-foreground">
+                    {queueStats?.pc_stats?.in_use || 0} PCs active
                   </p>
                 </div>
               </div>
@@ -363,32 +631,35 @@ function QueueMonitor() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Queue Management</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button 
-                className="w-full btn-energy" 
+                className="w-full" 
                 variant="outline"
-                disabled={state.queue.length === 0 || availablePCs === 0}
-                onClick={() => state.queue.length > 0 && handleAssignToPC(state.queue[0])}
+                onClick={handleProcessQueue}
+                disabled={loading}
               >
-                <Play className="h-4 w-4 mr-2" />
-                Assign Next Student
+                <ListOrdered className="h-4 w-4 mr-2" />
+                Process Queue
               </Button>
               <Button 
-                className="w-full btn-energy" 
+                className="w-full" 
                 variant="outline"
-                disabled={state.queue.length === 0}
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset Queue Order
-              </Button>
-              <Button 
-                className="w-full btn-energy" 
-                variant="outline"
+                onClick={handleCleanupExpired}
+                disabled={loading}
               >
                 <Timer className="h-4 w-4 mr-2" />
-                Queue Report
+                Cleanup Expired
+              </Button>
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Data
               </Button>
             </CardContent>
           </Card>
