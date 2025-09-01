@@ -2583,3 +2583,21 @@ Did you mean one of these?
 [2025-09-01 05:34:53] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
 [2025-09-01 06:04:27] local.ERROR: Failed to send PC available notification: include(C:\COMPUTER_TRACKING\backend\vendor\composer/../../app/Http/Controllers/PushNotificationController.php): Failed to open stream: No such file or directory  
 [2025-09-01 06:48:31] local.ERROR: Failed to send PC available notification: Method App\Http\Controllers\PushNotificationController::notifyPcAvailable does not exist.  
+[2025-09-01 11:38:36] local.ERROR: Command "config:Cear" is not defined.
+
+Did you mean one of these?
+    config:cache
+    config:clear
+    config:show {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"config:Cear\" is not defined.
+
+Did you mean one of these?
+    config:cache
+    config:clear
+    config:show at C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php:737)
+[stacktrace]
+#0 C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php(266): Symfony\\Component\\Console\\Application->find('config:Cear')
+#1 C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php(175): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#2 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(201): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 C:\\COMPUTER_TRACKING\\backend\\artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 {main}
+"} 
