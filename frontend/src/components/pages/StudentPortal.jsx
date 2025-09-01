@@ -22,9 +22,17 @@ import {
   UserPlus,
   UserMinus,
   ListOrdered, // Changed from Queue
-  Hourglass
+  Hourglass,
+  Bell
 } from 'lucide-react';
 import API_BASE_URL from './Config';
+import { 
+  isPushNotificationSupported, 
+  requestNotificationPermission, 
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  registerServiceWorker
+} from '@/utils/pushNotification';
 
 function StudentPortal() {
   const navigate = useNavigate();
@@ -39,6 +47,89 @@ function StudentPortal() {
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [lastUpdated, setLastUpdated] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [notificationsSupported, setNotificationsSupported] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  useEffect(() => {
+    const supported = isPushNotificationSupported();
+    setNotificationsSupported(supported);
+    console.log('Push notifications supported:', supported);
+  }, []);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  
+  // Handle enabling notifications
+  const handleEnableNotifications = async (studentId) => {
+    try {
+      setNotificationLoading(true);
+      
+      // Request permission and subscribe to push notifications
+      const result = await subscribeToPushNotifications(studentId);
+      
+      if (result.success) {
+        setNotificationsEnabled(true);
+        showAlert('success', 'Notifications enabled successfully');
+      } else {
+        console.error('Failed to enable notifications:', result.message || result.error);
+        showAlert('error', `Failed to enable notifications: ${result.message || result.error}`);
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+      showAlert('error', `Error enabling notifications: ${error.message}`);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+  
+  // Handle disabling notifications
+  const handleDisableNotifications = async () => {
+    try {
+      setNotificationLoading(true);
+      
+      const result = await unsubscribeFromPushNotifications();
+      
+      if (result.success) {
+        setNotificationsEnabled(false);
+        showAlert('success', 'Notifications disabled');
+      } else {
+        console.error('Failed to disable notifications:', result.message || result.error);
+        showAlert('error', `Failed to disable notifications: ${result.message || result.error}`);
+      }
+    } catch (error) {
+      console.error('Error disabling notifications:', error);
+      showAlert('error', `Error disabling notifications: ${error.message}`);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  // Check if notifications are supported and register service worker
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      let isSupported = isPushNotificationSupported();
+      console.log('Push notifications supported:', isSupported);
+      
+      if (!window.isSecureContext) {
+        console.warn('Push notifications require HTTPS or localhost');
+        alert('Push notifications require a secure connection (HTTPS) or localhost. Please access the site using HTTPS.');
+        setNotificationsSupported(false);
+        return;
+      }
+      
+      if (isSupported) {
+        try {
+          await registerServiceWorker();
+          console.log('Service worker registered successfully');
+        } catch (error) {
+          console.error('Failed to register service worker:', error);
+          isSupported = false;
+        }
+      }
+      
+      setNotificationsSupported(isSupported);
+    };
+    
+    initializeNotifications();
+  }, []);
 
   // Update current time every second
   useEffect(() => {
@@ -48,7 +139,7 @@ function StudentPortal() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check for logged in user on component mount
+  // Check for logged in user on component mount and initialize notifications
   useEffect(() => {
     const userData = localStorage.getItem('user_data');
     if (userData) {
@@ -56,6 +147,15 @@ function StudentPortal() {
         const parsedUserData = JSON.parse(userData);
         if (parsedUserData.userType === 'student') {
           setCurrentUser(parsedUserData);
+          
+          // Check if push notifications are supported
+          const supported = isPushNotificationSupported();
+          setNotificationsSupported(supported);
+          
+          // Auto-enable notifications without prompting
+          if (supported) {
+            handleEnableNotifications(parsedUserData.id);
+          }
         } else {
           // Not a student, redirect to login
           navigate('/login');
@@ -234,6 +334,26 @@ function StudentPortal() {
     }
   };
 
+  // Check for push notification support
+  useEffect(() => {
+    const checkNotificationSupport = async () => {
+      const supported = isPushNotificationSupported();
+      setNotificationsSupported(supported);
+      
+      if (supported) {
+        // Register service worker
+        await registerServiceWorker();
+        
+        // Check if already subscribed
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setNotificationsEnabled(!!subscription);
+      }
+    };
+    
+    checkNotificationSupport();
+  }, []);
+
   // Initial data fetch and setup interval
   useEffect(() => {
     if (currentUser) {
@@ -398,6 +518,50 @@ function StudentPortal() {
     setLoading(false);
     showAlert('success', 'Data refreshed successfully');
   };
+  
+  // Toggle push notifications
+  const handleToggleNotifications = async () => {
+    if (!currentUser || !currentUser.id) {
+      showAlert('error', 'User information not available');
+      return;
+    }
+    
+    setNotificationLoading(true);
+    
+    try {
+      if (notificationsEnabled) {
+        // Unsubscribe from notifications
+        const result = await unsubscribeFromPushNotifications();
+        if (result.success) {
+          setNotificationsEnabled(false);
+          showAlert('success', 'Notifications disabled');
+        } else {
+          showAlert('error', result.message || 'Failed to disable notifications');
+        }
+      } else {
+        // Request permission and subscribe
+        const permissionGranted = await requestNotificationPermission();
+        
+        if (permissionGranted) {
+          const result = await subscribeToPushNotifications(currentUser.student_id);
+          
+          if (result.success) {
+            setNotificationsEnabled(true);
+            showAlert('success', 'Notifications enabled');
+          } else {
+            showAlert('error', result.message || 'Failed to enable notifications');
+          }
+        } else {
+          showAlert('error', 'Notification permission denied');
+        }
+      }
+    } catch (error) {
+      console.error('Toggle notifications error:', error);
+      showAlert('error', 'Error toggling notifications');
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
 
   // Handle logout
   const handleLogout = () => {
@@ -547,6 +711,26 @@ function StudentPortal() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
+          
+          {console.log('Notification Button Render:', { notificationsSupported, notificationsEnabled, notificationLoading, isSecureContext: window.isSecureContext })}          
+          {!window.isSecureContext ? (
+            <Button variant="outline" disabled title="HTTPS Required">
+              <Bell className="h-4 w-4 mr-2" />
+              HTTPS Required
+            </Button>
+          ) : notificationsSupported && (
+            <Button 
+              onClick={handleToggleNotifications} 
+              variant={notificationsEnabled ? "default" : "outline"}
+              disabled={notificationLoading}
+              className="notification-toggle-button"
+            >
+              <Bell className={`h-4 w-4 mr-2 ${notificationLoading ? 'animate-pulse' : ''}`} />
+              {notificationLoading 
+                ? 'Processing...' 
+                : (notificationsEnabled ? 'Notifications On' : 'Notifications Off')}
+            </Button>
+          )}
         </div>
       </div>
 

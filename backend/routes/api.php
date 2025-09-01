@@ -49,6 +49,11 @@ Route::patch('/pc-usage/{id}/resume', [PCUsageController::class, 'resumeUsage'])
 Route::get('/pc-usage/pc/{pcId}/history', [PCUsageController::class, 'getPCUsageHistory']);
 Route::get('/pc-usage/student/{studentId}/history', [PCUsageController::class, 'getStudentUsageHistory']);
 
+// Push Notification routes
+use App\Http\Controllers\PushNotificationController;
+Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
+Route::post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
+
 // Routes for student portal
 Route::get('/pc-status/students', [PCUsageController::class, 'getPCStatusForStudents']);
 Route::get('/student/{studentId}/active-usage', [PCUsageController::class, 'getStudentActiveUsage']);

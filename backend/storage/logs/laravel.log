@@ -2562,3 +2562,21 @@ Did you mean one of these?
 #42 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('C:\\\\COMPUTER_TRA...')
 #43 {main}
 "} 
+[2025-09-01 00:20:48] local.ERROR: Push subscription error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'computer_tracking.push_subscriptions' doesn't exist (Connection: mysql, SQL: select * from `push_subscriptions` where (`endpoint` = https://fcm.googleapis.com/fcm/send/cyMIy9oCW9s:APA91bHvC7cP33IivKKpSbfc_eooZdMa3vV78zVOiZzBi6LfxiYw3SwsnM8_48fUI_J1_LAlCWY43oeUfCRNfDAJtOWfqD9zfC0XCX4PaQ-fOg2a4fS6EoJVTkoq0UK_MHFNQ5B9Jjx9) limit 1)  
+[2025-09-01 00:20:52] local.ERROR: Push subscription error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'computer_tracking.push_subscriptions' doesn't exist (Connection: mysql, SQL: select * from `push_subscriptions` where (`endpoint` = https://fcm.googleapis.com/fcm/send/cyMIy9oCW9s:APA91bHvC7cP33IivKKpSbfc_eooZdMa3vV78zVOiZzBi6LfxiYw3SwsnM8_48fUI_J1_LAlCWY43oeUfCRNfDAJtOWfqD9zfC0XCX4PaQ-fOg2a4fS6EoJVTkoq0UK_MHFNQ5B9Jjx9) limit 1)  
+[2025-09-01 00:20:58] local.ERROR: Push subscription error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'computer_tracking.push_subscriptions' doesn't exist (Connection: mysql, SQL: select * from `push_subscriptions` where (`endpoint` = https://fcm.googleapis.com/fcm/send/cyMIy9oCW9s:APA91bHvC7cP33IivKKpSbfc_eooZdMa3vV78zVOiZzBi6LfxiYw3SwsnM8_48fUI_J1_LAlCWY43oeUfCRNfDAJtOWfqD9zfC0XCX4PaQ-fOg2a4fS6EoJVTkoq0UK_MHFNQ5B9Jjx9) limit 1)  
+[2025-09-01 00:22:26] local.ERROR: Push unsubscription error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'computer_tracking.push_subscriptions' doesn't exist (Connection: mysql, SQL: delete from `push_subscriptions` where `endpoint` = https://fcm.googleapis.com/fcm/send/cyMIy9oCW9s:APA91bHvC7cP33IivKKpSbfc_eooZdMa3vV78zVOiZzBi6LfxiYw3SwsnM8_48fUI_J1_LAlCWY43oeUfCRNfDAJtOWfqD9zfC0XCX4PaQ-fOg2a4fS6EoJVTkoq0UK_MHFNQ5B9Jjx9)  
+[2025-09-01 02:53:26] local.ERROR: Send notification error: include(C:\COMPUTER_TRACKING\backend\vendor\composer/../../app/Models/PushSubscription.php): Failed to open stream: No such file or directory  
+[2025-09-01 03:01:46] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 03:14:58] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 03:26:46] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 03:31:42] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 03:58:21] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:03:21] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:08:21] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:13:21] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:18:22] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:23:22] local.ERROR: Send notification error: [VAPID] You must provide a public key.  
+[2025-09-01 04:33:26] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 04:38:44] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  
+[2025-09-01 04:56:52] local.ERROR: Send notification error: [VAPID] You must provide a subject that is either a mailto: or a URL.  

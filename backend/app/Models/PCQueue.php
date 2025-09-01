@@ -287,6 +287,25 @@ class PCQueue extends Model
 
         // Update PC status to reserved
         $pc->update(['status' => 'reserved']);
+        
+        // Send push notification to student
+        $this->sendPcAvailableNotification($pc);
+    }
+    
+    /**
+     * Send push notification to student when PC becomes available
+     */
+    protected function sendPcAvailableNotification(PC $pc)
+    {
+        try {
+            // Get the PushNotificationController
+            $controller = app()->make('App\Http\Controllers\PushNotificationController');
+            
+            // Send notification to student
+            $controller->notifyPcAvailable($this->student_id, $pc->name);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send PC available notification: ' . $e->getMessage());
+        }
     }
 
     /**
