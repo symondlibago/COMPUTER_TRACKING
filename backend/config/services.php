@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'webpush' => [
+        'vapid' => [
+            'public_key' => env('VAPID_PUBLIC_KEY', 'BPYcFH-C_YNQkP4saQFRJ_zdTRjQ0xVLxuN4hQuogMjQJ8HSi6KZOb0W3-r5BHALSMgGWpv7BKwy7F6gtmxVxFc'),
+            'private_key' => env('VAPID_PRIVATE_KEY', 'HQk2PuR-QRXcdm-lz3GezSX_LM1U0mp-G4JPkGQqDGw'),
+            'subject' => env('VAPID_SUBJECT', 'mailto:admin@example.com')
+        ]
+    ],
+
 ];

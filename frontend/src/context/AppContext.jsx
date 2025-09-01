@@ -274,6 +274,28 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   
+  // Load user data from localStorage on initialization
+  useEffect(() => {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      try {
+        const data = JSON.parse(userData);
+        
+        if (data.user && data.userType) {
+          dispatch({
+            type: ActionTypes.LOGIN,
+            payload: {
+              user: data.user,
+              userType: data.userType
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user data from localStorage:', error);
+      }
+    }
+  }, []);
+  
   // Auto-process queue when PCs become available (with dependency optimization)
   useEffect(() => {
     const availablePCs = state.pcs.filter(pc => pc.status === 'available').length;

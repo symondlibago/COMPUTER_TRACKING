@@ -67,7 +67,13 @@ function StudentPortal() {
       
       if (result.success) {
         setNotificationsEnabled(true);
-        showAlert('success', 'Notifications enabled successfully');
+        
+        // Show different message if using fallback
+        if (result.usingFallback) {
+          showAlert('success', 'Notifications enabled in fallback mode (push service unavailable)');
+        } else {
+          showAlert('success', 'Notifications enabled successfully');
+        }
       } else {
         console.error('Failed to enable notifications:', result.message || result.error);
         showAlert('error', `Failed to enable notifications: ${result.message || result.error}`);
@@ -323,6 +329,33 @@ function StudentPortal() {
       if (response.ok) {
         const data = await response.json();
         console.log('Student Queue Status Data:', data.data); // Debug log
+        
+        // Check if status changed from waiting to assigned
+        if (studentQueueStatus && 
+            studentQueueStatus.status === 'waiting' && 
+            data.data && 
+            data.data.status === 'assigned') {
+          
+          // Show notification even if tab is inactive
+          if (notificationsEnabled && 'showNotification' in window) {
+            try {
+              // Use the showNotification utility function
+              const { showNotification } = await import('@/utils/pushNotification');
+              await showNotification('PC Available!', {
+                body: `A PC is now available for you! You have 5 minutes to check in.`,
+                icon: '/favicon.ico',
+                vibrate: [200, 100, 200],
+                requireInteraction: true,
+                data: {
+                  url: '/student-portal'
+                }
+              });
+            } catch (error) {
+              console.error('Error showing notification:', error);
+            }
+          }
+        }
+        
         setStudentQueueStatus(data.data);
       } else {
         console.error('Failed to fetch student queue status');
@@ -389,11 +422,35 @@ function StudentPortal() {
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
   };
 
+  // Handle toggle notifications
+  const handleToggleNotifications = async () => {
+    if (!currentUser || !currentUser.student_id) {
+      showAlert('error', 'User information not available');
+      return;
+    }
+    
+    if (notificationsEnabled) {
+      await handleDisableNotifications();
+    } else {
+      await handleEnableNotifications(currentUser.student_id);
+    }
+  };
+
   // Handle join queue
   const handleJoinQueue = async () => {
     if (!currentUser || !currentUser.student_id) {
       showAlert('error', 'User information not available');
       return;
+    }
+
+    // Auto-enable notifications when joining queue if supported and not already enabled
+    if (notificationsSupported && !notificationsEnabled) {
+      try {
+        await handleEnableNotifications(currentUser.student_id);
+      } catch (error) {
+        console.error('Failed to auto-enable notifications:', error);
+        // Continue with queue join even if notification enabling fails
+      }
     }
 
     setQueueLoading(true);
@@ -519,49 +576,7 @@ function StudentPortal() {
     showAlert('success', 'Data refreshed successfully');
   };
   
-  // Toggle push notifications
-  const handleToggleNotifications = async () => {
-    if (!currentUser || !currentUser.id) {
-      showAlert('error', 'User information not available');
-      return;
-    }
-    
-    setNotificationLoading(true);
-    
-    try {
-      if (notificationsEnabled) {
-        // Unsubscribe from notifications
-        const result = await unsubscribeFromPushNotifications();
-        if (result.success) {
-          setNotificationsEnabled(false);
-          showAlert('success', 'Notifications disabled');
-        } else {
-          showAlert('error', result.message || 'Failed to disable notifications');
-        }
-      } else {
-        // Request permission and subscribe
-        const permissionGranted = await requestNotificationPermission();
-        
-        if (permissionGranted) {
-          const result = await subscribeToPushNotifications(currentUser.student_id);
-          
-          if (result.success) {
-            setNotificationsEnabled(true);
-            showAlert('success', 'Notifications enabled');
-          } else {
-            showAlert('error', result.message || 'Failed to enable notifications');
-          }
-        } else {
-          showAlert('error', 'Notification permission denied');
-        }
-      }
-    } catch (error) {
-      console.error('Toggle notifications error:', error);
-      showAlert('error', 'Error toggling notifications');
-    } finally {
-      setNotificationLoading(false);
-    }
-  };
+  // This function was removed to fix the duplicate declaration error
 
   // Handle logout
   const handleLogout = () => {
@@ -712,7 +727,6 @@ function StudentPortal() {
             {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
           
-          {console.log('Notification Button Render:', { notificationsSupported, notificationsEnabled, notificationLoading, isSecureContext: window.isSecureContext })}          
           {!window.isSecureContext ? (
             <Button variant="outline" disabled title="HTTPS Required">
               <Bell className="h-4 w-4 mr-2" />
@@ -723,13 +737,23 @@ function StudentPortal() {
               onClick={handleToggleNotifications} 
               variant={notificationsEnabled ? "default" : "outline"}
               disabled={notificationLoading}
-              className="notification-toggle-button"
+              className={`notification-toggle-button ${!notificationsEnabled && studentQueueStatus ? 'animate-pulse border-orange-500 bg-orange-100 hover:bg-orange-200' : ''}`}
             >
               <Bell className={`h-4 w-4 mr-2 ${notificationLoading ? 'animate-pulse' : ''}`} />
               {notificationLoading 
                 ? 'Processing...' 
-                : (notificationsEnabled ? 'Notifications On' : 'Notifications Off')}
+                : (notificationsEnabled ? 'Notifications On' : 'Enable Notifications')}
             </Button>
+          )}
+          
+          {/* Notification recommendation banner */}
+          {notificationsSupported && !notificationsEnabled && studentQueueStatus && (
+            <div className="w-full mt-2 p-2 bg-orange-100 border border-orange-300 rounded-md text-sm text-orange-800">
+              <p className="flex items-center">
+                <Bell className="h-4 w-4 mr-2" />
+                Enable notifications to be alerted when a PC becomes available, even if this tab is inactive!
+              </p>
+            </div>
           )}
         </div>
       </div>

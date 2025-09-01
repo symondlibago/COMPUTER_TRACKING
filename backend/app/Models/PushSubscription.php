@@ -9,15 +9,23 @@ class PushSubscription extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
-        'student_id',
+        'user_id',
         'endpoint',
-        'auth_token',
         'public_key',
+        'auth_token',
     ];
 
-    public function student()
+    /**
+     * Get the user that owns the subscription.
+     */
+    public function user()
     {
-        return $this->belongsTo(User::class, 'student_id', 'student_id');
+        return $this->belongsTo(User::class);
     }
 }
