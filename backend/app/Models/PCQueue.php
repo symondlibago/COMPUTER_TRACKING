@@ -298,13 +298,25 @@ class PCQueue extends Model
     protected function sendPcAvailableNotification(PC $pc)
     {
         try {
+            \Illuminate\Support\Facades\Log::info("PCQueue: Sending PC available notification to student ID: {$this->student_id} for PC: {$pc->name}");
+            
             // Get the PushNotificationController
             $controller = app()->make('App\Http\Controllers\PushNotificationController');
             
             // Send notification to student
-            $controller->notifyPcAvailable($this->student_id, $pc->name);
+            $result = $controller->notifyPcAvailable($this->student_id, $pc->name);
+            
+            if ($result) {
+                \Illuminate\Support\Facades\Log::info("PCQueue: Successfully sent notification to student ID: {$this->student_id}");
+            } else {
+                \Illuminate\Support\Facades\Log::warning("PCQueue: Failed to send notification to student ID: {$this->student_id}");
+            }
+            
+            return $result;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send PC available notification: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error("PCQueue: Failed to send PC available notification: {$e->getMessage()}");
+            \Illuminate\Support\Facades\Log::error("PCQueue: Stack trace: {$e->getTraceAsString()}");
+            return false;
         }
     }
 

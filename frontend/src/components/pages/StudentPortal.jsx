@@ -304,29 +304,65 @@ function StudentPortal() {
         const data = await response.json();
         console.log('Student Queue Status Data:', data.data); // Debug log
         
-        // Check if status changed from waiting to assigned
-        if (studentQueueStatus && 
-            studentQueueStatus.status === 'waiting' && 
-            data.data && 
-            data.data.status === 'assigned') {
+        // Always check if PC is assigned, not just on status change
+        if (data.data && data.data.status === 'assigned') {
           
           // Show notification even if tab is inactive
-          if (notificationsEnabled && 'showNotification' in window) {
-            try {
-              // Use the showNotification utility function
-              const { showNotification } = await import('@/utils/pushNotification');
-              await showNotification('PC Available!', {
-                body: `A PC is now available for you! You have 5 minutes to check in.`,
+          try {
+            // Always try to show a notification when PC is assigned, regardless of subscription status
+            const { showNotification } = await import('@/utils/pushNotification');
+            
+            // Get PC name if available
+            const pcName = data.data.pc ? data.data.pc.name : 'Unknown';
+            
+            // Show an urgent notification with stronger alerts - IMMEDIATELY
+            await showNotification('🚨 YOUR PC IS READY NOW!', {
+              body: `⚡ URGENT: PC ${pcName} is assigned to you! You have 5 minutes to check in or you'll lose your turn!`,
+              icon: '/favicon.ico',
+              vibrate: [500, 200, 500, 200, 500],
+              requireInteraction: true,
+              renotify: true,
+              tag: 'pc-assigned-' + Date.now(), // Unique tag to ensure notification shows
+              silent: false, // Ensure sound plays
+              data: {
+                url: '/student-portal',
+                importance: 'high'
+              }
+            });
+            
+            // Send a second notification immediately as a backup
+            setTimeout(async () => {
+              await showNotification('🚨 PC ASSIGNED TO YOU!', {
+                body: `PC ${pcName} is ready for you now! Please check in immediately!`,
                 icon: '/favicon.ico',
-                vibrate: [200, 100, 200],
+                vibrate: [300, 100, 300],
                 requireInteraction: true,
+                renotify: true,
+                tag: 'pc-assigned-backup-' + Date.now(),
                 data: {
                   url: '/student-portal'
                 }
               });
-            } catch (error) {
-              console.error('Error showing notification:', error);
-            }
+            }, 500);
+            
+            // Send a third notification after 30 seconds if they haven't checked in
+            setTimeout(async () => {
+              if (document.visibilityState !== 'visible') {
+                await showNotification('⚠️ PC ASSIGNMENT EXPIRING!', {
+                  body: `Your PC assignment will expire soon! Please check in immediately!`,
+                  icon: '/favicon.ico',
+                  vibrate: [800, 200, 800, 200, 800],
+                  requireInteraction: true,
+                  renotify: true,
+                  tag: 'pc-assigned-reminder-' + Date.now(),
+                  data: {
+                    url: '/student-portal'
+                  }
+                });
+              }
+            }, 30000);
+          } catch (error) {
+            console.error('Error showing notification:', error);
           }
         }
         

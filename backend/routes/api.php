@@ -73,6 +73,17 @@ Route::post('/pc-queue/process', [PCQueueController::class, 'processQueue']);
 Route::post('/pc-queue/cleanup-expired', [PCQueueController::class, 'cleanupExpiredAssignments']);
 Route::get('/pc-queue/statistics', [PCQueueController::class, 'getQueueStatistics']);
 
+// Student prefix routes for queue management
+Route::prefix('student')->group(function () {
+    Route::get('/queue-status', [PCQueueController::class, 'getQueueStatus']);
+    Route::post('/join-queue', [PCQueueController::class, 'joinQueue']);
+    Route::post('/leave-queue', [PCQueueController::class, 'leaveQueue']);
+    Route::get('/current-assignment', [PCQueueController::class, 'getCurrentAssignment']);
+    Route::get('/check-pc-available', [PCQueueController::class, 'checkPcAvailable']);
+});
+
+Route::get('/pc-queue/check-pc-available', [PCQueueController::class, 'checkPcAvailable']);
+
 // Admin Queue Monitor routes
 Route::get('/pc-queue/monitor', [PCQueueController::class, 'getQueueMonitor']);
 Route::post('/pc-queue/{id}/check-in', [PCQueueController::class, 'checkInStudent']);

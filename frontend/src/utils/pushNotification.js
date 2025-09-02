@@ -61,24 +61,127 @@ export const subscribeToPushNotifications = async (studentId) => {
       return { success: false, message: 'Notification permission denied' };
     }
 
-    // SIMPLIFIED APPROACH: Skip push subscription entirely and use direct browser notifications
-    // This works in all environments including non-HTTPS and when push service is unavailable
-    window.useFallbackNotifications = true;
+    // Register service worker if not already registered
+    let registration;
+    try {
+      registration = await navigator.serviceWorker.ready;
+      console.log('Service worker already registered:', registration);
+    } catch (error) {
+      console.log('Registering service worker...');
+      registration = await registerServiceWorker();
+    }
     
+    // Store the student ID in the service worker
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'STORE_STUDENT_ID',
+        studentId: studentId
+      });
+      
+      // Also store in localStorage as backup
+      localStorage.setItem('studentId', studentId);
+      
+      // Trigger an immediate check
+      navigator.serviceWorker.controller.postMessage({
+        type: 'CHECK_NOW'
+      });
+    }
+
+    // Get VAPID public key from server
+    const vapidResponse = await fetch('/api/push/vapid-public-key', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      }
+    });
+
+    if (!vapidResponse.ok) {
+      console.error('Failed to get VAPID public key:', await vapidResponse.text());
+      // Fall back to direct notifications if VAPID key retrieval fails
+      window.useFallbackNotifications = true;
+      
+      // Test the notification system immediately
+       try {
+         await registration.showNotification('Notifications Enabled (Fallback Mode)', {
+           body: 'You will receive notifications when a PC becomes available',
+           icon: '/favicon.ico'
+         });
+       } catch (error) {
+         console.error('Error showing fallback notification:', error);
+       }
+      
+      return { 
+        success: true, 
+        message: 'Using direct browser notifications (fallback mode)',
+        usingFallback: true 
+      };
+    }
+
+    const { vapidPublicKey } = await vapidResponse.json();
+    console.log('Got VAPID public key:', vapidPublicKey.substring(0, 10) + '...');
+
+    // Convert VAPID key to the format expected by the browser
+    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    // Get existing subscription or create a new one
+    let subscription = await registration.pushManager.getSubscription();
+    
+    if (subscription) {
+      console.log('Using existing push subscription');
+    } else {
+      console.log('Creating new push subscription...');
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      });
+      console.log('Created new subscription');
+    }
+
+    // Send the subscription to the server
+    const response = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: btoa(String.fromCharCode.apply(null, 
+            new Uint8Array(subscription.getKey('p256dh')))),
+          auth: btoa(String.fromCharCode.apply(null, 
+            new Uint8Array(subscription.getKey('auth'))))
+        },
+        student_id: studentId
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server response:', errorText);
+      throw new Error('Failed to subscribe on server');
+    }
+
     // Test the notification system immediately
     try {
-      new Notification('Notifications Enabled', {
+      // Use the service worker registration to show the notification
+      await registration.showNotification('Push Notifications Enabled', {
         body: 'You will now receive notifications when a PC becomes available',
         icon: '/favicon.ico'
       });
-    } catch (e) {
-      console.warn('Test notification failed, but continuing:', e);
+    } catch (error) {
+      console.error('Error showing test notification:', error);
     }
+    
+    window.useFallbackNotifications = false;
     
     return { 
       success: true, 
-      message: 'Using direct browser notifications',
-      usingFallback: true
+      message: 'Successfully subscribed to push notifications',
+      usingFallback: false
     };
   } catch (error) {
     console.error('Error subscribing to push notifications:', error);
@@ -154,27 +257,47 @@ export const showNotification = async (title, options = {}) => {
       return { success: false, message: 'Notification permission denied' };
     }
     
-    // If we're using the fallback notification system (when push service is unavailable)
-    if (window.useFallbackNotifications) {
-      console.log('Using fallback notification system');
-      // Create a standard browser notification
-      new Notification(title, {
-        body: options.body || '',
-        icon: options.icon || '/favicon.ico',
-        ...options
-      });
-      
-      return { success: true };
-    }
-    
+    // Always use the service worker registration to show notifications
     const registration = await navigator.serviceWorker.ready;
-    await registration.showNotification(title, {
+    
+    // Add default options
+    const notificationOptions = {
       body: options.body || '',
       icon: options.icon || '/favicon.ico',
       badge: '/favicon.ico',
-      vibrate: [100, 50, 100],
+      vibrate: [100, 50, 100, 100, 100, 100],
+      tag: options.tag || 'pc-notification-' + Date.now(),
+      requireInteraction: true,
+      renotify: true,
+      silent: false,
+      data: {
+        url: options.url || window.location.href,
+        ...options.data
+      },
       ...options
-    });
+    };
+    
+    // Log notification attempt
+    console.log('Showing notification:', title, notificationOptions);
+    
+    // Show the notification using the service worker
+    await registration.showNotification(title, notificationOptions);
+    
+    // Send a message to the service worker to check for PC availability
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'CHECK_NOW'
+      });
+    }
+    
+    // Send a follow-up notification after a short delay to ensure delivery
+    setTimeout(async () => {
+      await registration.showNotification(title, {
+        ...notificationOptions,
+        tag: 'pc-notification-followup-' + Date.now()
+      });
+      console.log('Follow-up notification sent');
+    }, 2000);
     
     return { success: true };
   } catch (error) {
