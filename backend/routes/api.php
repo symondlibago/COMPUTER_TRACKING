@@ -50,6 +50,9 @@ Route::patch('/pc-usage/{id}/resume', [PCUsageController::class, 'resumeUsage'])
 Route::get('/pc-usage/pc/{pcId}/history', [PCUsageController::class, 'getPCUsageHistory']);
 Route::get('/pc-usage/student/{studentId}/history', [PCUsageController::class, 'getStudentUsageHistory']);
 
+// NEW: PC Performance Analytics route for dashboard
+Route::get('/pc-usage/performance-analytics', [PCUsageController::class, 'getPCPerformanceAnalytics']);
+
 // Push Notification routes - Public VAPID key endpoint
 Route::get('/push/vapid-public-key', [PushNotificationController::class, 'getVapidPublicKey'])->withoutMiddleware(['auth:sanctum', 'web']);
 

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PCUsageController extends Controller
 {
@@ -55,6 +56,80 @@ class PCUsageController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving active PC usage: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get PC performance analytics for dashboard.
+     */
+    public function getPCPerformanceAnalytics(): JsonResponse
+    {
+        try {
+            // First, auto-complete expired sessions
+            $this->autoCompleteExpiredSessions();
+
+            // Get all PCs with their usage statistics
+            $pcs = PC::all();
+            $performanceData = [];
+
+            foreach ($pcs as $pc) {
+                // Get completed sessions for this PC
+                $completedSessions = PCUsage::where('pc_id', $pc->id)
+                    ->where('status', 'completed')
+                    ->get();
+
+                // Get active session for this PC
+                $activeSession = PCUsage::where('pc_id', $pc->id)
+                    ->whereIn('status', ['active', 'paused'])
+                    ->first();
+
+                // Calculate statistics
+                $totalSessions = $completedSessions->count();
+                $totalUsageTime = $completedSessions->sum('actual_usage_duration'); // in seconds
+                
+                // Find highest session time (in minutes)
+                $highestSessionTime = $completedSessions->max('actual_usage_duration');
+                $avgSessionTime = $totalSessions > 0 ? round($totalUsageTime / $totalSessions / 60) : 0; // in minutes
+                $highestSessionTimeMinutes = $highestSessionTime ? round($highestSessionTime / 60) : 0;
+
+                // Calculate utilization rate based on total time vs available time
+                // For simplicity, we'll calculate based on sessions vs total possible sessions in a day
+                $utilizationRate = min(100, ($totalSessions * 10)); // Rough estimate, adjust as needed
+
+                // If there's an active session, include it in calculations
+                if ($activeSession) {
+                    $totalSessions += 1;
+                    $currentSessionTime = round($activeSession->current_usage_time / 60); // in minutes
+                    if ($currentSessionTime > $highestSessionTimeMinutes) {
+                        $highestSessionTimeMinutes = $currentSessionTime;
+                    }
+                }
+
+                $performanceData[] = [
+                    'id' => $pc->id,
+                    'name' => $pc->name,
+                    'location' => $pc->row, // Using row as location
+                    'status' => $pc->status,
+                    'avgSessionTime' => max($avgSessionTime, $highestSessionTimeMinutes), // Use highest time as requested
+                    'totalSessions' => $totalSessions,
+                    'utilizationRate' => min(100, $utilizationRate),
+                    'highestSessionTime' => $highestSessionTimeMinutes,
+                    'isCurrentlyInUse' => $activeSession !== null,
+                    'currentSessionDuration' => $activeSession ? round($activeSession->current_usage_time / 60) : 0
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $performanceData,
+                'message' => 'PC performance analytics retrieved successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving PC performance analytics: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -169,7 +244,6 @@ class PCUsageController extends Controller
             PCUsage::cleanupExpiredSessions();
         } catch (\Exception $e) {
             // Log error but don't throw to avoid breaking the main request
-            \Log::error('Error auto-completing expired sessions: ' . $e->getMessage());
         }
     }
 

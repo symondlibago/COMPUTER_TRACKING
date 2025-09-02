@@ -31,7 +31,7 @@ function Sidebar() {
       title: 'Dashboard',
       icon: LayoutDashboard,
       path: '/admin/dashboard',
-      description: 'Overview & Statistics'
+      description: 'Overview & Analytics'
     },
     {
       title: 'PC Management',
@@ -56,12 +56,6 @@ function Sidebar() {
       icon: History,
       path: '/admin/usage-history',
       description: 'Usage Reports'
-    },
-    {
-      title: 'Analytics',
-      icon: BarChart3,
-      path: '/admin/analytics',
-      description: 'Insights & Trends'
     }
   ];
 

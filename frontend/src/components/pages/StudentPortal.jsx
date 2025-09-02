@@ -306,63 +306,64 @@ function StudentPortal() {
         
         // Always check if PC is assigned, not just on status change
         if (data.data && data.data.status === 'assigned') {
+          // Store the assignment time to prevent duplicate notifications
+          const lastNotificationTime = localStorage.getItem('lastPcAssignedNotification');
+          const currentTime = Date.now();
           
-          // Show notification even if tab is inactive
-          try {
-            // Always try to show a notification when PC is assigned, regardless of subscription status
-            const { showNotification } = await import('@/utils/pushNotification');
+          // Only show notification if we haven't shown one in the last 20 seconds
+          if (!lastNotificationTime || (currentTime - parseInt(lastNotificationTime)) > 20000) {
+            localStorage.setItem('lastPcAssignedNotification', currentTime.toString());
             
-            // Get PC name if available
-            const pcName = data.data.pc ? data.data.pc.name : 'Unknown';
-            
-            // Show an urgent notification with stronger alerts - IMMEDIATELY
-            await showNotification('🚨 YOUR PC IS READY NOW!', {
-              body: `⚡ URGENT: PC ${pcName} is assigned to you! You have 5 minutes to check in or you'll lose your turn!`,
-              icon: '/favicon.ico',
-              vibrate: [500, 200, 500, 200, 500],
-              requireInteraction: true,
-              renotify: true,
-              tag: 'pc-assigned-' + Date.now(), // Unique tag to ensure notification shows
-              silent: false, // Ensure sound plays
-              data: {
-                url: '/student-portal',
-                importance: 'high'
-              }
-            });
-            
-            // Send a second notification immediately as a backup
-            setTimeout(async () => {
-              await showNotification('🚨 PC ASSIGNED TO YOU!', {
-                body: `PC ${pcName} is ready for you now! Please check in immediately!`,
+            // Show notification even if tab is inactive
+            try {
+              // Always try to show a notification when PC is assigned, regardless of subscription status
+              const { showNotification } = await import('@/utils/pushNotification');
+              
+              // Get PC name if available
+              const pcName = data.data.pc ? data.data.pc.name : 'Unknown';
+              
+              // Show a single notification with all the important information
+              await showNotification('🚨 YOUR PC IS READY NOW!', {
+                body: `⚡ URGENT: PC ${pcName} is assigned to you! You have 5 minutes to check in or you'll lose your turn!`,
                 icon: '/favicon.ico',
-                vibrate: [300, 100, 300],
+                vibrate: [500, 200, 500],
                 requireInteraction: true,
                 renotify: true,
-                tag: 'pc-assigned-backup-' + Date.now(),
+                tag: 'pc-assigned', // Use a fixed tag to prevent multiple notifications
+                silent: false, // Ensure sound plays
                 data: {
-                  url: '/student-portal'
+                  url: '/student-portal',
+                  importance: 'high',
+                  pcName: pcName
                 }
               });
-            }, 500);
-            
-            // Send a third notification after 30 seconds if they haven't checked in
-            setTimeout(async () => {
+              
+              // Only send a reminder if they haven't checked in and the tab isn't visible
               if (document.visibilityState !== 'visible') {
-                await showNotification('⚠️ PC ASSIGNMENT EXPIRING!', {
-                  body: `Your PC assignment will expire soon! Please check in immediately!`,
-                  icon: '/favicon.ico',
-                  vibrate: [800, 200, 800, 200, 800],
-                  requireInteraction: true,
-                  renotify: true,
-                  tag: 'pc-assigned-reminder-' + Date.now(),
-                  data: {
-                    url: '/student-portal'
-                  }
-                });
+                // Set a timeout for the reminder
+                window.pcAssignmentReminder = setTimeout(async () => {
+                  await showNotification('⚠️ PC ASSIGNMENT EXPIRING!', {
+                    body: `Your PC assignment will expire soon! Please check in immediately!`,
+                    icon: '/favicon.ico',
+                    vibrate: [800, 200, 800],
+                    requireInteraction: true,
+                    renotify: true,
+                    tag: 'pc-assigned-reminder',
+                    data: {
+                      url: '/student-portal'
+                    }
+                  });
+                }, 30000);
               }
-            }, 30000);
-          } catch (error) {
-            console.error('Error showing notification:', error);
+            } catch (error) {
+              console.error('Error showing notification:', error);
+            }
+          }
+        } else if (data.data && data.data.status === 'completed') {
+          // Clear any pending reminders when checked in
+          if (window.pcAssignmentReminder) {
+            clearTimeout(window.pcAssignmentReminder);
+            window.pcAssignmentReminder = null;
           }
         }
         
@@ -397,6 +398,10 @@ function StudentPortal() {
     checkNotificationSupport();
   }, []);
 
+  // State for auto-refresh countdown
+  const [refreshCountdown, setRefreshCountdown] = useState(10);
+  const AUTO_REFRESH_INTERVAL = 10000; // 10 seconds
+  
   // Initial data fetch and setup interval
   useEffect(() => {
     if (currentUser) {
@@ -410,20 +415,32 @@ function StudentPortal() {
           fetchStudentQueueStatus()
         ]);
         setLoading(false);
+        // Reset countdown after each refresh
+        setRefreshCountdown(AUTO_REFRESH_INTERVAL / 1000);
       };
 
       loadData();
       
-      // Set up interval to refresh data every 30 seconds
-      const interval = setInterval(() => {
+      // Set up countdown timer
+      const countdownInterval = setInterval(() => {
+        setRefreshCountdown(prev => Math.max(0, prev - 1));
+      }, 1000);
+      
+      // Set up interval to refresh data every 10 seconds
+      const refreshInterval = setInterval(() => {
         fetchPCStatus();
         fetchActiveUsage();
         fetchStudentActiveUsage();
         fetchQueueStatus();
         fetchStudentQueueStatus();
-      }, 30000);
+        // Reset countdown after auto-refresh
+        setRefreshCountdown(AUTO_REFRESH_INTERVAL / 1000);
+      }, AUTO_REFRESH_INTERVAL);
 
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(refreshInterval);
+        clearInterval(countdownInterval);
+      };
     }
   }, [currentUser]);
 
