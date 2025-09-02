@@ -2601,3 +2601,39 @@ Did you mean one of these?
 #3 C:\\COMPUTER_TRACKING\\backend\\artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
 #4 {main}
 "} 
+[2025-09-02 01:28:30] local.ERROR: Command "config:lear" is not defined.
+
+Did you mean one of these?
+    auth:clear-resets
+    cache:clear
+    config:cache
+    config:clear
+    config:show
+    event:clear
+    optimize:clear
+    queue:clear
+    route:clear
+    schedule:clear-cache
+    view:clear {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"config:lear\" is not defined.
+
+Did you mean one of these?
+    auth:clear-resets
+    cache:clear
+    config:cache
+    config:clear
+    config:show
+    event:clear
+    optimize:clear
+    queue:clear
+    route:clear
+    schedule:clear-cache
+    view:clear at C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php:737)
+[stacktrace]
+#0 C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php(266): Symfony\\Component\\Console\\Application->find('config:lear')
+#1 C:\\COMPUTER_TRACKING\\backend\\vendor\\symfony\\console\\Application.php(175): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#2 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(201): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 C:\\COMPUTER_TRACKING\\backend\\artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 {main}
+"} 
+[2025-09-02 02:33:31] local.ERROR: Failed to send PC available notification: Method App\Http\Controllers\PushNotificationController::notifyPcAvailable does not exist.  
+[2025-09-02 02:40:23] local.ERROR: Failed to send PC available notification: Method App\Http\Controllers\PushNotificationController::notifyPcAvailable does not exist.  

@@ -33,7 +33,7 @@ import {
   unsubscribeFromPushNotifications,
   registerServiceWorker
 } from '@/utils/pushNotification';
-
+import { apiGet } from '../../utils/apiUtils';
 function StudentPortal() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
@@ -49,6 +49,7 @@ function StudentPortal() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  
 
   useEffect(() => {
     const supported = isPushNotificationSupported();
@@ -193,24 +194,17 @@ function StudentPortal() {
     return () => clearInterval(interval);
   }, [currentUser, studentActiveUsage, studentQueueStatus]);
 
+  // Import at the top of the file
+  
+
   // Fetch PC status for students with fallback
   const fetchPCStatus = async () => {
     try {
-      let response = await fetch(`${API_BASE_URL}/pc-status/students`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      let response = await apiGet('/pc-status/students');
       
       if (!response.ok) {
         console.log('Student endpoint failed, trying regular PC endpoint...');
-        response = await fetch(`${API_BASE_URL}/pcs`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
+        response = await apiGet('/pcs');
       }
       
       if (response.ok) {
@@ -245,12 +239,7 @@ function StudentPortal() {
   // Fetch active usage sessions
   const fetchActiveUsage = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-usage/active`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pc-usage/active');
       
       if (response.ok) {
         const data = await response.json();
@@ -269,12 +258,7 @@ function StudentPortal() {
     if (!currentUser || !currentUser.student_id) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/student/${currentUser.student_id}/active-usage`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet(`/student/${currentUser.student_id}/active-usage`);
       
       if (response.ok) {
         const data = await response.json();
@@ -293,12 +277,7 @@ function StudentPortal() {
   // Fetch queue status
   const fetchQueueStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-queue/status`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pc-queue/status');
       
       if (response.ok) {
         const data = await response.json();
@@ -319,12 +298,7 @@ function StudentPortal() {
     if (!currentUser || !currentUser.student_id) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-queue/student/${currentUser.student_id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet(`/pc-queue/student/${currentUser.student_id}`);
       
       if (response.ok) {
         const data = await response.json();

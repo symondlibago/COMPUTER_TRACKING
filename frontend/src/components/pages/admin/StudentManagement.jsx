@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import API_BASE_URL from '../Config';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../../utils/apiUtils';
 import {
   Users,
   Plus,
@@ -68,7 +69,7 @@ function StudentManagement() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/students`);
+      const response = await apiGet('/students');
       const data = await response.json();
       
       if (data.success) {

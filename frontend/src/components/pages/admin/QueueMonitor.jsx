@@ -20,6 +20,7 @@ import {
   Activity
 } from 'lucide-react';
 import API_BASE_URL from '../Config';
+import { apiGet } from '../../../utils/apiUtils';
 
 function QueueMonitor() {
   const [queueData, setQueueData] = useState(null);
@@ -40,12 +41,7 @@ function QueueMonitor() {
   // Fetch queue monitor data
   const fetchQueueMonitor = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-queue/monitor`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pc-queue/monitor');
       
       if (response.ok) {
         const data = await response.json();

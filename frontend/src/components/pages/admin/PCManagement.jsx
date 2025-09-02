@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiGet } from '../../../utils/apiUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,12 +82,7 @@ function PCManagement() {
   const fetchPCs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/pcs`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pcs');
       
       if (response.ok) {
         const data = await response.json();
@@ -106,12 +102,7 @@ function PCManagement() {
   // Fetch active PC usage
   const fetchActiveUsage = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-usage/active`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pc-usage/active');
       
       if (response.ok) {
         const data = await response.json();

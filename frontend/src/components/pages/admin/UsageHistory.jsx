@@ -20,6 +20,7 @@ import {
   Activity
 } from 'lucide-react';
 import API_BASE_URL from '../Config';
+import { apiGet } from '../../../utils/apiUtils';
 
 function UsageHistory() {
   const [usageHistory, setUsageHistory] = useState([]);
@@ -57,12 +58,7 @@ function UsageHistory() {
   // Fetch PCs for filter dropdown
   const fetchPCs = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pcs`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const response = await apiGet('/pcs');
       
       if (response.ok) {
         const data = await response.json();
@@ -81,12 +77,7 @@ function UsageHistory() {
       setLoading(true);
       
       // First get active usage
-      const activeResponse = await fetch(`${API_BASE_URL}/pc-usage/active`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      const activeResponse = await apiGet('/pc-usage/active');
 
       let allUsageData = [];
 
