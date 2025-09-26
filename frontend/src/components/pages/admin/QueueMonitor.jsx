@@ -403,7 +403,7 @@ function QueueMonitor() {
                 Students with Assigned PCs
               </CardTitle>
               <CardDescription>
-                Students who have been assigned PCs and need to check in within 5 minutes
+                Students who have been assigned PCs and need to check in within 2 minutes and 30 seconds
               </CardDescription>
             </CardHeader>
             <CardContent>

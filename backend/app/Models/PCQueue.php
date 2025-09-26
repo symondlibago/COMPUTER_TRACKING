@@ -276,7 +276,7 @@ class PCQueue extends Model
     public function assignPC(PC $pc)
     {
         $assignedAt = Carbon::now();
-        $expiresAt = $assignedAt->copy()->addMinutes(5);
+        $expiresAt = $assignedAt->copy()->addSeconds(150); // 2 minutes and 30 seconds
 
         $this->update([
             'status' => 'assigned',

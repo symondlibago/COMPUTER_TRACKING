@@ -324,7 +324,7 @@ function StudentPortal() {
               
               // Show a single notification with all the important information
               await showNotification('🚨 YOUR PC IS READY NOW!', {
-                body: `⚡ URGENT: PC ${pcName} is assigned to you! You have 5 minutes to check in or you'll lose your turn!`,
+                body: `⚡ URGENT: PC ${pcName} is assigned to you! You have 2 minutes and 30 seconds to check in or you'll lose your turn!`,
                 icon: '/favicon.ico',
                 vibrate: [500, 200, 500],
                 requireInteraction: true,
@@ -353,7 +353,7 @@ function StudentPortal() {
                       url: '/student-portal'
                     }
                   });
-                }, 30000);
+                }, 15000); // Reduced from 30s to 15s to match the shorter overall waiting time
               }
             } catch (error) {
               console.error('Error showing notification:', error);

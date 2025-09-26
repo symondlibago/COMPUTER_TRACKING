@@ -208,11 +208,11 @@ function appReducer(state, action) {
         const availablePc = state.pcs.find(pc => pc.status === 'available');
         
         if (availablePc) {
-          // Set 5-minute timeout for sign-in
+          // Set 2 minutes and 30 seconds timeout for sign-in
           const timeoutId = setTimeout(() => {
             // Move to end of queue if timeout
             // This would be handled by TIMEOUT_QUEUE_ITEM action
-          }, 5 * 60 * 1000); // 5 minutes
+          }, 2.5 * 60 * 1000); // 2 minutes and 30 seconds
           
           return {
             ...state,

@@ -126,21 +126,12 @@ function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Button
-                size="lg"
-                onClick={() => navigate('/admin')}
-                className="btn-energy bg-primary hover:bg-primary/90 text-lg px-8 py-4 glow-blue"
-              >
-                <Shield className="mr-2 h-5 w-5" />
-                Admin Dashboard
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
               
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => navigate('/student')}
-                className="btn-energy border-white text-white hover:bg-white hover:text-black text-lg px-8 py-4"
+                className="btn-energy border-white text-black hover:bg-white hover:text-white text-lg px-8 py-4"
               >
                 <Users className="mr-2 h-5 w-5" />
                 Student Portal

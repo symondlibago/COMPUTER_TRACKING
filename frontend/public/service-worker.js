@@ -25,7 +25,7 @@ self.addEventListener('push', function(event) {
     
     // If there's no body in the notification data, use a default
     if (!notificationData.body) {
-      notificationData.body = '⚡ URGENT: Your PC is ready! You have 5 minutes to check in before losing your spot!';
+      notificationData.body = '⚡ URGENT: Your PC is ready! You have 2 minutes and 30 seconds to check in before losing your spot!';
     }
     
     // Ensure we have an icon

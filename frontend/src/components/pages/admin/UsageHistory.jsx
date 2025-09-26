@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import API_BASE_URL from '../Config';
 import { apiGet } from '../../../utils/apiUtils';
+import * as XLSX from "xlsx";
 
 function UsageHistory() {
   const [usageHistory, setUsageHistory] = useState([]);
@@ -221,21 +222,32 @@ function UsageHistory() {
   const stats = calculateStats();
 
   const handleExportData = () => {
-    // In a real app, this would generate and download a CSV/Excel file
-    const csvData = sortedHistory.map(session => ({
-      'Student Name': session.studentName,
-      'Student ID': session.studentId,
-      'PC Name': session.pcName,
-      'Location': session.pcLocation,
-      'Start Time': formatPhilippinesTime(session.created_at),
-      'End Time': session.updated_at ? formatPhilippinesTime(session.updated_at) : 'Active',
-      'Duration': formatDuration(session.duration),
-      'Status': session.status
+    if (sortedHistory.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+  
+    // Prepare data for Excel
+    const excelData = sortedHistory.map(session => ({
+      "Student Name": session.studentName,
+      "Student ID": session.studentId,
+      "PC Name": session.pcName,
+      "Location": session.pcLocation,
+      "Start Time": formatPhilippinesTime(session.created_at),
+      "End Time": session.updated_at ? formatPhilippinesTime(session.updated_at) : "Active",
+      "Duration": formatDuration(session.duration),
+      "Status": session.status
     }));
-    
-    console.log('Exporting data:', csvData);
-    alert('Export functionality would be implemented here');
+  
+    // Create a new workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Usage History");
+  
+    // Trigger file download
+    XLSX.writeFile(workbook, "Usage_History.xlsx");
   };
+  
 
   if (loading) {
     return (
