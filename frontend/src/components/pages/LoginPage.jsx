@@ -235,11 +235,6 @@ function LoginPage() {
                     <LogIn className="h-4 w-4 mr-2" />
                     Sign In as Admin
                   </Button>
-                  <div className="text-xs text-center text-muted-foreground mt-4 p-3 bg-muted rounded-lg">
-                    <strong>Demo Credentials:</strong><br />
-                    Username: admin<br />
-                    Password: admin123
-                  </div>
                 </motion.form>
               </TabsContent>
 
@@ -301,11 +296,6 @@ function LoginPage() {
                     <LogIn className="h-4 w-4 mr-2" />
                     Sign In as Student
                   </Button>
-                  <div className="text-xs text-center text-muted-foreground mt-4 p-3 bg-muted rounded-lg">
-                    <strong>Demo Credentials:</strong><br />
-                    Student ID: 2024001-2024010<br />
-                    Password: student123
-                  </div>
                 </motion.form>
               </TabsContent>
             </Tabs>

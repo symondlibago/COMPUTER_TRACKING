@@ -76,12 +76,10 @@ function UsageHistory() {
   const fetchUsageHistory = async () => {
     try {
       setLoading(true);
-      
-      // First get active usage
-      const activeResponse = await apiGet('/pc-usage/active');
-
       let allUsageData = [];
 
+      // 1. Get all active sessions
+      const activeResponse = await apiGet('/pc-usage/active');
       if (activeResponse.ok) {
         const activeData = await activeResponse.json();
         const activeUsage = (activeData.data || []).map(session => ({
@@ -90,54 +88,38 @@ function UsageHistory() {
           studentId: session.student_id,
           pcName: session.pc_name,
           pcLocation: session.pc_row,
-          startTime: new Date(session.created_at), // Use created_at as start time
-          endTime: null, // Active sessions don't have end time
-          duration: Math.floor(session.actual_usage_duration / 60), // Convert seconds to minutes
+          startTime: new Date(session.created_at),
+          endTime: null,
+          duration: Math.floor(session.actual_usage_duration / 60),
           status: session.is_paused ? 'paused' : 'active',
           created_at: session.created_at,
-          updated_at: session.created_at // For active sessions, updated_at is same as created_at
+          updated_at: session.created_at
         }));
         allUsageData = [...allUsageData, ...activeUsage];
       }
 
-      // Try to get completed usage history from all PCs
-      for (const pc of pcs) {
-        try {
-          const historyResponse = await fetch(`${API_BASE_URL}/pc-usage/pc/${pc.id}/history`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-
-          if (historyResponse.ok) {
-            const historyData = await historyResponse.json();
-            const completedUsage = (historyData.data || []).map(session => ({
-              id: `history-${session.id}`,
-              studentName: session.student_name,
-              studentId: session.student_id,
-              pcName: pc.name,
-              pcLocation: pc.row,
-              startTime: new Date(session.created_at), // Use created_at as start time
-              endTime: session.updated_at ? new Date(session.updated_at) : null, // Use updated_at as end time
-              duration: Math.floor(session.actual_usage_duration / 60), // Convert seconds to minutes
-              status: session.status,
-              created_at: session.created_at,
-              updated_at: session.updated_at
-            }));
-            allUsageData = [...allUsageData, ...completedUsage];
-          }
-        } catch (error) {
-          console.error(`Error fetching history for PC ${pc.id}:`, error);
-        }
+      // 2. OPTIMIZED: Get all completed/historical sessions in a single API call
+      const historyResponse = await apiGet('/pc-usage/history/all');
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json();
+        const completedUsage = (historyData.data || []).map(session => ({
+          id: `history-${session.id}`,
+          studentName: session.student_name,
+          studentId: session.student_id,
+          pcName: session.pc_name,
+          pcLocation: session.pc_row,
+          startTime: new Date(session.created_at),
+          endTime: session.end_time ? new Date(session.end_time) : null,
+          duration: Math.floor(session.actual_usage_duration / 60),
+          status: session.status,
+          created_at: session.created_at,
+          updated_at: session.updated_at
+        }));
+        allUsageData = [...allUsageData, ...completedUsage];
       }
 
-      // Remove duplicates based on session ID
-      const uniqueUsage = allUsageData.filter((session, index, self) => 
-        index === self.findIndex(s => s.id === session.id)
-      );
-
-      setUsageHistory(uniqueUsage);
+      // No need to remove duplicates as we are fetching distinct sets of data
+      setUsageHistory(allUsageData);
     } catch (error) {
       console.error('Fetch usage history error:', error);
     } finally {
@@ -146,9 +128,11 @@ function UsageHistory() {
   };
 
   useEffect(() => {
+    // Fetch everything on component mount
     fetchPCs();
+    fetchUsageHistory();
   }, []);
-
+  
   useEffect(() => {
     if (pcs.length > 0) {
       fetchUsageHistory();

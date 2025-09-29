@@ -50,6 +50,9 @@ Route::patch('/pc-usage/{id}/resume', [PCUsageController::class, 'resumeUsage'])
 Route::get('/pc-usage/pc/{pcId}/history', [PCUsageController::class, 'getPCUsageHistory']);
 Route::get('/pc-usage/student/{studentId}/history', [PCUsageController::class, 'getStudentUsageHistory']);
 
+// OPTIMIZED: New route to get all usage history in a single call
+Route::get('/pc-usage/history/all', [PCUsageController::class, 'getAllUsageHistory']);
+
 // NEW: PC Performance Analytics route for dashboard
 Route::get('/pc-usage/performance-analytics', [PCUsageController::class, 'getPCPerformanceAnalytics']);
 
@@ -98,8 +101,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
     
-    // You can move PC routes back here once authentication is working properly
-    // Route::apiResource('pcs', PCController::class);
-    // Route::patch('/pcs/{pc}/status', [PCController::class, 'updateStatus']);
 });
 

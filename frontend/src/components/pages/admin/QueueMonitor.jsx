@@ -93,7 +93,7 @@ function QueueMonitor() {
     const interval = setInterval(() => {
       fetchQueueMonitor();
       fetchQueueStats();
-    }, 5000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);

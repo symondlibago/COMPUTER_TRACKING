@@ -185,11 +185,10 @@ function PCManagement() {
     fetchPCs();
     fetchActiveUsage();
     
-    // Set up interval to refresh data every 30 seconds
     const interval = setInterval(() => {
       fetchActiveUsage();
       fetchPCs(); // Also refresh PCs to update status
-    }, 30000);
+    }, 360000);
 
     return () => clearInterval(interval);
   }, []);

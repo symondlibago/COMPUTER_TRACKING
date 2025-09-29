@@ -539,10 +539,11 @@ class PCUsageController extends Controller
                         'id' => $usage->id,
                         'student_id' => $usage->student_id,
                         'student_name' => $usage->student_name,
-                        'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
-                        'end_time' => $usage->end_time ? $usage->end_time->format('Y-m-d H:i:s') : null,
-                        'created_at' => $usage->created_at->format('Y-m-d H:i:s'),
-                        'updated_at' => $usage->updated_at->format('Y-m-d H:i:s'),
+                        // OPTIMIZED: Use consistent ISO 8601 date format
+                        'start_time' => $usage->start_time->toIso8601String(),
+                        'end_time' => $usage->end_time ? $usage->end_time->toIso8601String() : null,
+                        'created_at' => $usage->created_at->toIso8601String(),
+                        'updated_at' => $usage->updated_at->toIso8601String(),
                         'actual_usage_duration' => $usage->actual_usage_duration,
                         'total_pause_duration' => $usage->total_pause_duration,
                         'formatted_usage_duration' => $usage->formatted_usage_duration,
@@ -581,10 +582,11 @@ class PCUsageController extends Controller
                         'pc_id' => $usage->pc_id,
                         'pc_name' => $usage->pc->name,
                         'pc_row' => $usage->pc->row,
-                        'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
-                        'end_time' => $usage->end_time ? $usage->end_time->format('Y-m-d H:i:s') : null,
-                        'created_at' => $usage->created_at->format('Y-m-d H:i:s'),
-                        'updated_at' => $usage->updated_at->format('Y-m-d H:i:s'),
+                        // OPTIMIZED: Use consistent ISO 8601 date format
+                        'start_time' => $usage->start_time->toIso8601String(),
+                        'end_time' => $usage->end_time ? $usage->end_time->toIso8601String() : null,
+                        'created_at' => $usage->created_at->toIso8601String(),
+                        'updated_at' => $usage->updated_at->toIso8601String(),
                         'actual_usage_duration' => $usage->actual_usage_duration,
                         'total_pause_duration' => $usage->total_pause_duration,
                         'formatted_usage_duration' => $usage->formatted_usage_duration,
@@ -603,6 +605,44 @@ class PCUsageController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving student usage history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getAllUsageHistory(): JsonResponse
+    {
+        try {
+            $history = PCUsage::with('pc')
+                ->whereNotIn('status', ['active', 'paused'])
+                ->orderBy('start_time', 'desc')
+                ->get()
+                ->map(function ($usage) {
+                    return [
+                        'id' => $usage->id,
+                        'student_id' => $usage->student_id,
+                        'student_name' => $usage->student_name,
+                        'pc_id' => $usage->pc_id,
+                        'pc_name' => $usage->pc->name,
+                        'pc_row' => $usage->pc->row,
+                        'start_time' => $usage->start_time->toIso8601String(),
+                        'end_time' => $usage->end_time ? $usage->end_time->toIso8601String() : null,
+                        'created_at' => $usage->created_at->toIso8601String(),
+                        'updated_at' => $usage->updated_at->toIso8601String(),
+                        'actual_usage_duration' => $usage->actual_usage_duration,
+                        'status' => $usage->status
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $history,
+                'message' => 'All usage history retrieved successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving all usage history: ' . $e->getMessage()
             ], 500);
         }
     }
