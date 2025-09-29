@@ -141,10 +141,50 @@ function StudentPortal() {
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTime(new Date());
+      // Check if there is an active usage session to update
+      if (studentActiveUsage) {
+        // Create a new version of the active usage state
+        setStudentActiveUsage(prevUsage => {
+          let updatedUsage = { ...prevUsage };
+
+          // If the session is active and not paused, increment the usage duration
+          if (prevUsage.status === 'active' && !prevUsage.is_paused) {
+            const newUsageSeconds = (prevUsage.actual_usage_duration || 0) + 1;
+            updatedUsage.actual_usage_duration = newUsageSeconds;
+            updatedUsage.formatted_usage_duration = formatDuration(newUsageSeconds);
+          }
+          // If the session is paused, increment the pause duration and update remaining time
+          else if (prevUsage.status === 'paused') {
+            const newPauseSeconds = (prevUsage.total_pause_duration || 0) + 1;
+            updatedUsage.total_pause_duration = newPauseSeconds;
+            updatedUsage.formatted_pause_duration = formatDuration(newPauseSeconds);
+            updatedUsage.remaining_pause_time = Math.max(0, (prevUsage.remaining_pause_time || 0) - 1);
+          }
+          return updatedUsage;
+        });
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [studentActiveUsage]);
+
+
+  const formatDuration = (totalSeconds) => {
+    if (isNaN(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    
+    let parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+     // Only show seconds if the total duration is less than a minute, or if there are no hours.
+    if (totalSeconds < 60 || (hours === 0 && seconds > 0)) {
+        parts.push(`${seconds}s`);
+    }
+    return parts.join(' ') || '0s';
+};
+
 
   // Check for logged in user on component mount and initialize notifications
   useEffect(() => {
@@ -177,28 +217,9 @@ function StudentPortal() {
     }
   }, [navigate]);
 
-  // Real-time timer for updating usage duration and queue status
-  useEffect(() => {
-    let interval = null;
-    if (currentUser) {
-      interval = setInterval(() => {
-        // Update student active usage and queue status every second for real-time tracking
-        if (studentActiveUsage && (studentActiveUsage.status === 'active' || studentActiveUsage.status === 'paused')) {
-          fetchStudentActiveUsage();
-        }
-        if (studentQueueStatus && studentQueueStatus.status === 'assigned') {
-          fetchStudentQueueStatus();
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [currentUser, studentActiveUsage, studentQueueStatus]);
-
-  // Import at the top of the file
-  
 
   // Fetch PC status for students with fallback
-  const fetchPCStatus = async () => {
+    const fetchPCStatus = async () => {
     try {
       let response = await apiGet('/pc-status/students');
       

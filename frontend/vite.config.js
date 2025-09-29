@@ -13,7 +13,8 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      ".ngrok-free.app", // 👈 allow all ngrok subdomains
+      ".ngrok-free.app",
+      "alphonse-preliterate-kelvin.ngrok-free.dev", // 👈 allow all ngrok subdomains
     ],
   },
 })

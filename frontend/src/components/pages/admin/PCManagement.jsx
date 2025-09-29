@@ -66,17 +66,56 @@ function PCManagement() {
   const [studentSearchResults, setStudentSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Real-time timer for updating usage durations
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Update active usage display every second for real-time tracking
-      if (activeUsage.length > 0) {
-        fetchActiveUsage();
-      }
-    }, 1000);
+    const timer = setInterval(() => {
+        setActiveUsage(prevUsages =>
+            prevUsages.map(usage => {
+                // Helper function to format seconds into a human-readable string (e.g., 1h 2m 3s)
+                const formatDuration = (totalSeconds) => {
+                    if (isNaN(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+                    
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = Math.floor(totalSeconds % 60);
+                    
+                    let parts = [];
+                    if (hours > 0) parts.push(`${hours}h`);
+                    if (minutes > 0) parts.push(`${minutes}m`);
+                    // Only show seconds if the total duration is less than a minute, or if there are no hours.
+                    if (totalSeconds < 60 || (hours === 0 && seconds > 0)) {
+                        parts.push(`${seconds}s`);
+                    }
+                    return parts.join(' ') || '0s';
+                };
 
-    return () => clearInterval(interval);
-  }, [activeUsage.length]);
+                // If the session is active and not paused, increment the usage duration.
+                if (usage.status === 'active' && !usage.is_paused) {
+                    const newUsageSeconds = (usage.actual_usage_duration || 0) + 1;
+                    return {
+                        ...usage,
+                        actual_usage_duration: newUsageSeconds,
+                        formatted_usage_duration: formatDuration(newUsageSeconds),
+                    };
+                }
+                // If the session is paused, increment the pause duration and decrement the remaining time.
+                else if (usage.status === 'paused' && usage.is_paused) {
+                    const newPauseSeconds = (usage.total_pause_duration || 0) + 1;
+                    const newRemainingTime = Math.max(0, (usage.remaining_pause_time || 0) - 1);
+                    return {
+                        ...usage,
+                        total_pause_duration: newPauseSeconds,
+                        formatted_pause_duration: formatDuration(newPauseSeconds),
+                        remaining_pause_time: newRemainingTime,
+                    };
+                }
+
+                return usage; // Return usage unchanged if not active or paused
+            })
+        );
+    }, 1000); // This interval runs every second
+
+    return () => clearInterval(timer); // Cleanup on component unmount
+}, []); 
 
   // Fetch PCs from backend
   const fetchPCs = async () => {
@@ -486,32 +525,30 @@ function PCManagement() {
   };
 
   // Format time to Philippines timezone (UTC+8)
-  const formatPhilippinesTime = (dateString) => {
-    if (!dateString) return 'N/A';
+const formatPhilippinesTime = (dateString) => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    // Directly parse the ISO 8601 date string provided by the API
+    const date = new Date(dateString);
     
-    try {
-      // Handle Laravel datetime format (Y-m-d H:i:s) - assumes UTC
-      // Add 'Z' to indicate UTC if not present
-      const utcDateString = dateString.includes('Z') ? dateString : dateString + 'Z';
-      const date = new Date(utcDateString);
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        return 'Invalid Date';
-      }
-      
-      // Convert to Philippine time (UTC+8)
-      return date.toLocaleTimeString('en-PH', { 
-        hour12: false, // Use 24-hour format
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Manila'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error, dateString);
+    // Check if the parsed date is valid
+    if (isNaN(date.getTime())) {
       return 'Invalid Date';
     }
-  };
+    
+    // Format the date to a time string for the 'Asia/Manila' timezone
+    return date.toLocaleTimeString('en-PH', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true, // Use AM/PM format
+      timeZone: 'Asia/Manila'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error, dateString);
+    return 'Invalid Date';
+  }
+};
 
   const getUsageStatusBadge = (usage) => {
     if (usage.status === 'paused') {

@@ -34,14 +34,16 @@ class PCUsageController extends Controller
                         'pc_row' => $usage->pc->row,
                         'student_id' => $usage->student_id,
                         'student_name' => $usage->student_name,
-                        'start_time' => $usage->start_time->format('Y-m-d H:i:s'),
-                        'created_at' => $usage->created_at->format('Y-m-d H:i:s'),
+                        // FIX: Changed date format to ISO 8601 to include timezone info
+                        'start_time' => $usage->start_time->toIso8601String(),
+                        'created_at' => $usage->created_at->toIso8601String(),
                         'actual_usage_duration' => $usage->current_usage_time,
                         'total_pause_duration' => $usage->current_pause_duration,
                         'formatted_usage_duration' => $usage->formatted_usage_duration,
                         'formatted_pause_duration' => $usage->formatted_pause_duration,
                         'is_paused' => $usage->is_paused,
-                        'pause_start_time' => $usage->pause_start_time ? $usage->pause_start_time->format('Y-m-d H:i:s') : null,
+                        // FIX: Changed date format to ISO 8601 to include timezone info
+                        'pause_start_time' => $usage->pause_start_time ? $usage->pause_start_time->toIso8601String() : null,
                         'remaining_pause_time' => $usage->remaining_pause_time,
                         'status' => $usage->status
                     ];
@@ -59,6 +61,7 @@ class PCUsageController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Get PC performance analytics for dashboard.
@@ -139,6 +142,7 @@ class PCUsageController extends Controller
      */
     public function getPCStatusForStudents(): JsonResponse
     {
+        // ... (function remains the same, but the student's active usage data will be correct now)
         try {
             // First, auto-complete expired sessions
             $this->autoCompleteExpiredSessions();
@@ -165,7 +169,8 @@ class PCUsageController extends Controller
                     'usage_duration' => $activeUsage ? $activeUsage->current_usage_time : 0,
                     'formatted_usage_duration' => $activeUsage ? $activeUsage->formatted_usage_duration : '0s',
                     'is_paused' => $activeUsage ? $activeUsage->is_paused : false,
-                    'start_time' => $activeUsage ? $activeUsage->start_time->format('Y-m-d H:i:s') : null,
+                    // FIX: Changed date format to ISO 8601 to include timezone info
+                    'start_time' => $activeUsage ? $activeUsage->start_time->toIso8601String() : null,
                 ];
             });
 
@@ -211,13 +216,15 @@ class PCUsageController extends Controller
                 'pc_row' => $activeUsage->pc->row,
                 'student_id' => $activeUsage->student_id,
                 'student_name' => $activeUsage->student_name,
-                'start_time' => $activeUsage->start_time->format('Y-m-d H:i:s'),
+                 // FIX: Changed date format to ISO 8601 to include timezone info
+                'start_time' => $activeUsage->start_time->toIso8601String(),
                 'actual_usage_duration' => $activeUsage->current_usage_time,
                 'total_pause_duration' => $activeUsage->current_pause_duration,
                 'formatted_usage_duration' => $activeUsage->formatted_usage_duration,
                 'formatted_pause_duration' => $activeUsage->formatted_pause_duration,
                 'is_paused' => $activeUsage->is_paused,
-                'pause_start_time' => $activeUsage->pause_start_time ? $activeUsage->pause_start_time->format('Y-m-d H:i:s') : null,
+                // FIX: Changed date format to ISO 8601 to include timezone info
+                'pause_start_time' => $activeUsage->pause_start_time ? $activeUsage->pause_start_time->toIso8601String() : null,
                 'remaining_pause_time' => $activeUsage->remaining_pause_time,
                 'status' => $activeUsage->status
             ];
