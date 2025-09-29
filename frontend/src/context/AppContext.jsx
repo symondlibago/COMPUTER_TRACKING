@@ -25,14 +25,14 @@ const initialState = {
   ],
   
   // Current User Session
-  currentUser: { id: 1, name: 'Admin User' }, // Set default admin user for testing
-  userType: 'admin', // Set default to admin for testing
+  currentUser: null, // Start as null, will be loaded from localStorage
+  userType: null,    // Start as null
+  token: null,       // MODIFICATION: Add token to the initial state
   
   // UI State
   sidebarCollapsed: false,
   theme: 'light'
 };
-
 // Action types
 const ActionTypes = {
   // PC Actions
@@ -236,19 +236,21 @@ function appReducer(state, action) {
       }
       return state;
       
-    case ActionTypes.LOGIN:
-      return {
-        ...state,
-        currentUser: action.payload.user,
-        userType: action.payload.userType
-      };
+      case ActionTypes.LOGIN:
+        return {
+          ...state,
+          currentUser: action.payload.user,
+          userType: action.payload.userType,
+          token: action.payload.token, // MODIFICATION: Store the token in the state
+        };
       
-    case ActionTypes.LOGOUT:
-      return {
-        ...state,
-        currentUser: null,
-        userType: null
-      };
+        case ActionTypes.LOGOUT:
+          return {
+            ...state,
+            currentUser: null,
+            userType: null,
+            token: null, // MODIFICATION: Clear the token on logout
+          };
       
     case ActionTypes.TOGGLE_SIDEBAR:
       return {
@@ -277,7 +279,10 @@ export function AppProvider({ children }) {
   // Load user data from localStorage on initialization
   useEffect(() => {
     const userData = localStorage.getItem('user_data');
-    if (userData) {
+    const token = localStorage.getItem('auth_token'); // MODIFICATION: Get the token
+    
+    // MODIFICATION: Check for both user data and a token
+    if (userData && token) { 
       try {
         const data = JSON.parse(userData);
         
@@ -286,7 +291,8 @@ export function AppProvider({ children }) {
             type: ActionTypes.LOGIN,
             payload: {
               user: data.user,
-              userType: data.userType
+              userType: data.userType,
+              token: token // MODIFICATION: Add token to the payload
             }
           });
         }

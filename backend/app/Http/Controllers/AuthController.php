@@ -257,5 +257,57 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'password' => 'nullable|string|min:8|confirmed',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Update user's name
+            $user->name = $request->name;
+
+            // Update password only if a new one is provided
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->password);
+            }
+
+            $user->save();
+
+            // Return the updated user data
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'student_id' => $user->student_id, // or username for admin
+                        'role' => $user->role
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating profile',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

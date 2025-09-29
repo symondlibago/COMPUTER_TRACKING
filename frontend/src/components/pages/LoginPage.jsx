@@ -67,6 +67,7 @@ function LoginPage() {
           payload: {
             user: data.data.user,
             userType: "admin",
+            token: data.data.token, // MODIFICATION: Add the token to the global state
           },
         });
 
@@ -115,6 +116,7 @@ function LoginPage() {
           payload: {
             user: data.data.user,
             userType: "student",
+            token: data.data.token, // MODIFICATION: Add the token to the global state
           },
         });
 
@@ -259,7 +261,7 @@ function LoginPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="student-password">Password</Label>
-                    <div className="relative">
+                    <div className=".relative">
                       <Input
                         id="student-password"
                         type={showStudentPassword ? "text" : "password"}
@@ -317,4 +319,3 @@ function LoginPage() {
 }
 
 export default LoginPage;
-

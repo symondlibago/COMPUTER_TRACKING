@@ -95,11 +95,15 @@ Route::get('/pc-queue/monitor', [PCQueueController::class, 'getQueueMonitor']);
 Route::post('/pc-queue/{id}/check-in', [PCQueueController::class, 'checkInStudent']);
 Route::post('/pc-queue/{id}/expire', [PCQueueController::class, 'expireQueueEntry']);
 
+
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
+
+Route::put('/profile', [AuthController::class, 'updateProfile']);
     
 });
 

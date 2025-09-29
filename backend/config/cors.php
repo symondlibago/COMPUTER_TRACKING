@@ -19,13 +19,16 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins'  => [
-        'https://computer-tracking.vercel.app'
+    'allowed_origins' => ['*'],
+
+    'allowed_origins_patterns' => [
+        '#^https://[a-z0-9-]+\.ngrok-free\.app$#',
+        '#^https://[a-z0-9-]+\.ngrok\.io$#',
+        '#^http://192\.168\.\d+\.\d+:5173$#',
+        '#^http://10\.\d+\.\d+\.\d+:5173$#',
     ],
 
     'allowed_headers' => ['*'],
-
-    'allowed_origins_patterns' => [],
 
     'exposed_headers' => [],
 
