@@ -24,7 +24,8 @@ function LoginPage() {
   const [showStudentPassword, setShowStudentPassword] = useState(false);
   const [adminLogin, setAdminLogin] = useState({
     username: '',
-    password: ''
+    password: '',
+    otp_code: '' 
   });
   const [studentLogin, setStudentLogin] = useState({
     studentId: '',
@@ -47,6 +48,7 @@ function LoginPage() {
         body: JSON.stringify({
           username: adminLogin.username,
           password: adminLogin.password,
+          otp_code: adminLogin.otp_code,
         }),
       });
 
@@ -223,6 +225,18 @@ function LoginPage() {
                         )}
                       </Button>
                     </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="admin-otp">6-Digit PIN</Label>
+                    <Input
+                      id="admin-otp"
+                      type="password"
+                      placeholder="Enter your security PIN"
+                      maxLength="6"
+                      value={adminLogin.otp_code}
+                      onChange={(e) => setAdminLogin({...adminLogin, otp_code: e.target.value})}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
                   </div>
                   {errors.admin && (
                     <motion.p

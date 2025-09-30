@@ -21,6 +21,8 @@ class User extends Authenticatable
         'role',
         'student_id',
         'password',
+        'otp_code',
+        'otp_expires_at'
     ];
 
     /**
@@ -31,6 +33,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
 
     /**
@@ -40,6 +43,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'password' => 'hashed',
+        'otp_code' => 'hashed',
+        'otp_expires_at' => 'datetime',
     ];
 
     /**

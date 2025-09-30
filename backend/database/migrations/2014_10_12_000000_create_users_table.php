@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('role');
             $table->string('student_id')->unique();
             $table->string('password');
+            $table->string('otp_code')->nullable(); 
+            $table->dateTime('otp_expires_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

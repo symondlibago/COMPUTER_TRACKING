@@ -28,6 +28,10 @@ return [
         '#^http://10\.\d+\.\d+\.\d+:5173$#',
     ],
 
+    // 'allowed_origins'  => [
+    //     'https://computer-tracking.vercel.app'
+    // ],
+
     'allowed_headers' => ['*'],
 
     'exposed_headers' => [],

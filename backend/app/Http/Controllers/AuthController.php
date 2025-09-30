@@ -138,60 +138,69 @@ class AuthController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function adminLogin(Request $request)
-    {
-        try {
-            // Validate the request
-            $validator = Validator::make($request->all(), [
-                'username' => 'required|string',
-                'password' => 'required|string'
-            ]);
+{
+    try {
+        // Validate the request, including the new otp_code
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string',
+            'password' => 'required|string',
+            'otp_code' => 'required|string|digits:6', // Add this validation
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // Find admin user by student_id (using username as student_id for admin)
-            $user = User::where('student_id', $request->username)
-                       ->where('role', 'admin')
-                       ->first();
-
-            // Check if user exists and password is correct
-            if (!$user || !Hash::check($request->password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid username or password'
-                ], 401);
-            }
-
-            // Create token for API authentication
-            $token = $user->createToken('auth-token')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Admin login successful',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'username' => $user->student_id,
-                        'role' => $user->role
-                    ],
-                    'token' => $token
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred during admin login',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        // Find admin user by username
+        $user = User::where('student_id', $request->username)
+                   ->where('role', 'admin')
+                   ->first();
+
+        // Check if user exists and password is correct
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid username or password'
+            ], 401);
+        }
+
+        // Check if OTP code is valid and not expired
+        if (!$user->otp_code || !Hash::check($request->otp_code, $user->otp_code)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid PIN code. Access denied.'
+            ], 401);
+        }
+
+        // Create token for API authentication
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin login successful',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->student_id,
+                    'role' => $user->role
+                ],
+                'token' => $token
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred during admin login',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Student login with student_id and password
@@ -258,56 +267,110 @@ class AuthController extends Controller
         }
     }
 
-    public function updateProfile(Request $request)
-    {
-        try {
-            /** @var \App\Models\User $user */
-            $user = $request->user();
+    public function changeName(Request $request)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'password' => 'nullable|string|min:8|confirmed',
-            ]);
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'otp_code' => 'required|string|digits:6',
+    ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // Update user's name
-            $user->name = $request->name;
-
-            // Update password only if a new one is provided
-            if ($request->filled('password')) {
-                $user->password = Hash::make($request->password);
-            }
-
-            $user->save();
-
-            // Return the updated user data
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'student_id' => $user->student_id, // or username for admin
-                        'role' => $user->role
-                    ]
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while updating profile',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
     }
+
+    // Verify OTP
+    if (!Hash::check($request->otp_code, $user->otp_code)) {
+        return response()->json(['success' => false, 'message' => 'Invalid OTP code.'], 401);
+    }
+
+    $user->name = $request->name;
+    $user->save();
+
+    return response()->json(['success' => true, 'message' => 'Name updated successfully', 'data' => ['user' => $user]]);
+}
+
+public function changePassword(Request $request)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
+
+    $validator = Validator::make($request->all(), [
+        'password' => 'required|string|min:8|confirmed',
+        'otp_code' => 'required|string|digits:6',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+    }
+
+    // Verify OTP
+    if (!Hash::check($request->otp_code, $user->otp_code)) {
+        return response()->json(['success' => false, 'message' => 'Invalid OTP code.'], 401);
+    }
+
+    $user->password = Hash::make($request->password);
+    $user->save();
+
+    return response()->json(['success' => true, 'message' => 'Password updated successfully.']);
+}
+
+public function changeOtp(Request $request)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
+
+    $validator = Validator::make($request->all(), [
+        'current_password' => 'required|string',
+        'new_otp_code' => 'required|string|digits:6|confirmed',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+    }
+
+    // Verify current password
+    if (!Hash::check($request->current_password, $user->password)) {
+        return response()->json(['success' => false, 'message' => 'Incorrect current password.'], 401);
+    }
+
+    $user->otp_code = Hash::make($request->new_otp_code);
+    $user->save();
+
+    return response()->json(['success' => true, 'message' => 'OTP code updated successfully.']);
+}
+
+public function changeUsername(Request $request)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
+
+    $validator = Validator::make($request->all(), [
+        'current_password' => 'required|string',
+        'otp_code' => 'required|string|digits:6',
+        'new_username' => 'required|string|max:255|unique:users,student_id,' . $user->id,
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+    }
+
+    // Verify current password and OTP
+    if (!Hash::check($request->current_password, $user->password)) {
+        return response()->json(['success' => false, 'message' => 'Incorrect current password.'], 401);
+    }
+    if (!Hash::check($request->otp_code, $user->otp_code)) {
+        return response()->json(['success' => false, 'message' => 'Invalid OTP code.'], 401);
+    }
+
+    $user->student_id = $request->new_username;
+    $user->save();
+
+    return response()->json(['success' => true, 'message' => 'Username updated successfully', 'data' => ['user' => $user]]);
+}
+
+    
 }
 

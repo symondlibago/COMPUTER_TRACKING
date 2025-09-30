@@ -103,7 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
 
-Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::put('/profile/change-name', [AuthController::class, 'changeName']);
+    Route::put('/profile/change-password', [AuthController::class, 'changePassword']);
+    Route::put('/profile/change-otp', [AuthController::class, 'changeOtp']);
+    Route::put('/profile/change-username', [AuthController::class, 'changeUsername']);
     
 });
 
