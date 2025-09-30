@@ -421,7 +421,7 @@ function StudentPortal() {
 
   // State for auto-refresh countdown
   const [refreshCountdown, setRefreshCountdown] = useState(10);
-  const AUTO_REFRESH_INTERVAL = 120000; // 2 minutes
+  const AUTO_REFRESH_INTERVAL = 30000; // 2 minutes
   
   // Initial data fetch and setup interval
   useEffect(() => {
