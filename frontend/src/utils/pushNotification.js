@@ -138,6 +138,13 @@ export const subscribeToPushNotifications = async (studentId) => {
       console.log('Created new subscription');
     }
 
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      console.error('Authentication token not found. User is not logged in.');
+      return { success: false, message: 'User not authenticated' };
+    }
+
     // Send the subscription to the server
     const response = await fetch('/api/push/subscribe', {
       method: 'POST',
@@ -147,7 +154,6 @@ export const subscribeToPushNotifications = async (studentId) => {
         'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}` 
       },
-      credentials: 'include',
       body: JSON.stringify({
         endpoint: subscription.endpoint,
         keys: {
