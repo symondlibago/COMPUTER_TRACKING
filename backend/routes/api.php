@@ -59,10 +59,6 @@ Route::get('/pc-usage/performance-analytics', [PCUsageController::class, 'getPCP
 // Push Notification routes - Public VAPID key endpoint
 Route::get('/push/vapid-public-key', [PushNotificationController::class, 'getVapidPublicKey'])->withoutMiddleware(['auth:sanctum', 'web']);
 
-// Push Notification routes - Protected endpoints
-Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
-Route::post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
-
 // Routes for student portal
 Route::get('/pc-status/students', [PCUsageController::class, 'getPCStatusForStudents']);
 Route::get('/student/{studentId}/active-usage', [PCUsageController::class, 'getStudentActiveUsage']);
@@ -107,6 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/change-password', [AuthController::class, 'changePassword']);
     Route::put('/profile/change-otp', [AuthController::class, 'changeOtp']);
     Route::put('/profile/change-username', [AuthController::class, 'changeUsername']);
+
+    // Push Notification routes - Protected endpoints
+Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
+Route::post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
     
 });
 

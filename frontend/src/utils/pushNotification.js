@@ -144,7 +144,8 @@ export const subscribeToPushNotifications = async (studentId) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+        'ngrok-skip-browser-warning': 'true',
+        'Authorization': `Bearer ${token}` 
       },
       credentials: 'include',
       body: JSON.stringify({
