@@ -321,7 +321,7 @@ function StudentManagement() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -356,19 +356,6 @@ function StudentManagement() {
                 </p>
               </div>
               <Clock className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Offline</p>
-                <p className="text-2xl font-bold text-gray-600">
-                  {students.length - state.pcs.filter(pc => pc.currentUser).length - state.queue.length}
-                </p>
-              </div>
-              <UserX className="h-8 w-8 text-gray-500" />
             </div>
           </CardContent>
         </Card>
@@ -423,6 +410,7 @@ function StudentManagement() {
                             {student.student_id}
                           </div>
                         </div>
+                        
                       </div>
                     </div>
                     
@@ -439,12 +427,6 @@ function StudentManagement() {
                           <Badge className="bg-orange-100 text-orange-800">
                             <Clock className="h-3 w-3 mr-1" />
                             Queue #{studentStatus.position}
-                          </Badge>
-                        )}
-                        {studentStatus.status === 'offline' && (
-                          <Badge variant="secondary">
-                            <UserX className="h-3 w-3 mr-1" />
-                            Offline
                           </Badge>
                         )}
                       </div>
@@ -474,7 +456,7 @@ function StudentManagement() {
                   
                   {/* Additional Info */}
                   <div className="mt-3 pt-3 border-t border-border">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Registered</p>
                         <p className="font-medium">
@@ -487,10 +469,6 @@ function StudentManagement() {
                       <div>
                         <p className="text-muted-foreground">Role</p>
                         <p className="font-medium">Student</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Status</p>
-                        <p className="font-medium capitalize">{studentStatus.status}</p>
                       </div>
                     </div>
                   </div>

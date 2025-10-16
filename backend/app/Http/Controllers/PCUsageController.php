@@ -32,9 +32,9 @@ class PCUsageController extends Controller
                         'pc_id' => $usage->pc_id,
                         'pc_name' => $usage->pc->name,
                         'pc_row' => $usage->pc->row,
+                        'mac_address' => $usage->pc->mac_address,
                         'student_id' => $usage->student_id,
                         'student_name' => $usage->student_name,
-                        // FIX: Changed date format to ISO 8601 to include timezone info
                         'start_time' => $usage->start_time->toIso8601String(),
                         'created_at' => $usage->created_at->toIso8601String(),
                         'actual_usage_duration' => $usage->current_usage_time,
@@ -163,6 +163,7 @@ class PCUsageController extends Controller
                     'id' => $pc->id,
                     'name' => $pc->name,
                     'row' => $pc->row,
+                    'mac_address' => $pc->mac_address,
                     'status' => $pc->status,
                     'is_available' => $pc->status === 'active',
                     'is_in_use' => $pc->status === 'in-use',
@@ -214,6 +215,7 @@ class PCUsageController extends Controller
                 'pc_id' => $activeUsage->pc_id,
                 'pc_name' => $activeUsage->pc->name,
                 'pc_row' => $activeUsage->pc->row,
+                'pc_mac_address' => $activeUsage->pc->mac_address,
                 'student_id' => $activeUsage->student_id,
                 'student_name' => $activeUsage->student_name,
                  // FIX: Changed date format to ISO 8601 to include timezone info

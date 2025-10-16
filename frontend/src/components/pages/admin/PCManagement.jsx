@@ -54,6 +54,8 @@ function PCManagement() {
   const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [newPC, setNewPC] = useState({
     name: '',
+    host_name: '',
+    mac_address: '', 
     row: '',
     status: 'active'
   });
@@ -277,7 +279,7 @@ function PCManagement() {
           "success",
           `PC "${newPC.name}" has been added successfully to ${newPC.row}!`
         );
-        setNewPC({ name: "", row: "", status: "active" });
+        setNewPC({ name: "", host_name: "", mac_address: "", row: "", status: "active" });
         setIsAddDialogOpen(false);
         fetchPCs();
       } else {
@@ -307,6 +309,8 @@ function PCManagement() {
         },
         body: JSON.stringify({
           name: editingPC.name,
+          host_name: editingPC.host_name,
+          mac_address: editingPC.mac_address,
           row: editingPC.row,
           status: editingPC.status
         })
@@ -790,6 +794,8 @@ const formatPhilippinesTime = (dateString) => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Host Name</TableHead>
+                        <TableHead>MAC Address</TableHead> 
                         <TableHead>Row</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="w-[200px]">Actions</TableHead>
@@ -801,6 +807,8 @@ const formatPhilippinesTime = (dateString) => {
                         return (
                           <TableRow key={pc.id}>
                             <TableCell className="font-medium">{pc.name}</TableCell>
+                            <TableCell>{pc.host_name || 'N/A'}</TableCell>
+                            <TableCell>{pc.mac_address || 'N/A'}</TableCell>
                             <TableCell>{pc.row}</TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(pc.status)}>
@@ -950,7 +958,7 @@ const formatPhilippinesTime = (dateString) => {
                           <TableCell className="font-medium">
                             {usage.pc_name}
                             <div className="text-sm text-muted-foreground">
-                              Row {usage.pc_row}
+                              MAC {usage.mac_address}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -1060,6 +1068,24 @@ const formatPhilippinesTime = (dateString) => {
               />
             </div>
             <div>
+            <Label htmlFor="pc-host-name">Host Name</Label>
+            <Input
+              id="pc-host-name"
+              placeholder="e.g., LAB-PC-01"
+              value={newPC.host_name}
+              onChange={(e) => setNewPC({ ...newPC, host_name: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="pc-mac-address">MAC Address</Label>
+            <Input
+              id="pc-mac-address"
+              placeholder="e.g., 00:1A:2B:3C:4D:5E"
+              value={newPC.mac_address}
+              onChange={(e) => setNewPC({ ...newPC, mac_address: e.target.value })}
+            />
+          </div>
+            <div>
               <Label htmlFor="pc-row">Row</Label>
               <Input
                 id="pc-row"
@@ -1111,6 +1137,22 @@ const formatPhilippinesTime = (dateString) => {
                   onChange={(e) => setEditingPC({ ...editingPC, name: e.target.value })}
                 />
               </div>
+              <div>
+            <Label htmlFor="edit-pc-host-name">Host Name</Label>
+            <Input
+              id="edit-pc-host-name"
+              value={editingPC.host_name || ''}
+              onChange={(e) => setEditingPC({ ...editingPC, host_name: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="edit-pc-mac-address">MAC Address</Label>
+            <Input
+              id="edit-pc-mac-address"
+              value={editingPC.mac_address || ''}
+              onChange={(e) => setEditingPC({ ...editingPC, mac_address: e.target.value })}
+            />
+          </div>
               <div>
                 <Label htmlFor="edit-pc-row">Row</Label>
                 <Input

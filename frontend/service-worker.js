@@ -48,7 +48,7 @@ self.addEventListener('push', function(event) {
 
     // Show notification with enhanced options
     event.waitUntil(
-      self.registration.showNotification(data.title || 'PC Monitor Pro', options)
+      self.registration.showNotification(data.title || 'E-Lib Online Queuing', options)
     );
   }
 });

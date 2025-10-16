@@ -6390,3 +6390,71 @@ Did you mean one of these?
 #44 C:\\COMPUTER_TRACKING\\backend\\artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
 #45 {main}
 "} 
+[2025-10-15 02:02:30] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:02:30] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:02:30] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 02:02:30] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 02:05:47] production.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:05:47] production.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:05:47] production.WARNING: No push subscriptions found for user ID: 4  
+[2025-10-15 02:05:47] production.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-10-15 02:08:27] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:08:27] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:08:27] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 02:08:27] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 02:10:22] production.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:10:22] production.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:10:22] production.WARNING: No push subscriptions found for user ID: 4  
+[2025-10-15 02:10:22] production.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-10-15 02:12:54] production.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:12:54] production.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-1  
+[2025-10-15 02:12:54] production.WARNING: No push subscriptions found for user ID: 4  
+[2025-10-15 02:12:54] production.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-10-15 02:16:28] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:16:28] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-1  
+[2025-10-15 02:16:28] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 02:16:28] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:19:13] production.INFO: PCQueue: Sending PC available notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:19:13] production.INFO: Attempting to send notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:19:13] production.WARNING: No push subscriptions found for user ID: 2  
+[2025-10-15 03:19:13] production.WARNING: PCQueue: Failed to send notification to student ID: 2024001  
+[2025-10-15 03:40:40] production.INFO: PCQueue: Sending PC available notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:40:40] production.INFO: Attempting to send notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:40:40] production.WARNING: No push subscriptions found for user ID: 2  
+[2025-10-15 03:40:40] production.WARNING: PCQueue: Failed to send notification to student ID: 2024001  
+[2025-10-15 03:42:08] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:42:08] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:42:08] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:42:08] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:45:34] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:45:34] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:45:34] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:45:34] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:48:17] production.INFO: PCQueue: Sending PC available notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:48:17] production.INFO: Attempting to send notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:48:17] production.WARNING: No push subscriptions found for user ID: 2  
+[2025-10-15 03:48:17] production.WARNING: PCQueue: Failed to send notification to student ID: 2024001  
+[2025-10-15 03:50:00] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:50:00] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:50:00] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:50:00] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:52:43] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:52:43] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:52:43] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:52:43] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:55:35] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:55:35] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:55:35] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:55:35] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:56:32] production.INFO: PCQueue: Sending PC available notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:56:32] production.INFO: Attempting to send notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:56:32] production.WARNING: No push subscriptions found for user ID: 2  
+[2025-10-15 03:56:32] production.WARNING: PCQueue: Failed to send notification to student ID: 2024001  
+[2025-10-15 03:59:07] production.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:59:07] production.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-002  
+[2025-10-15 03:59:07] production.WARNING: No push subscriptions found for user ID: 3  
+[2025-10-15 03:59:07] production.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-10-15 03:59:26] production.INFO: PCQueue: Sending PC available notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:59:26] production.INFO: Attempting to send notification to student ID: 2024001 for PC: PC-002  
+[2025-10-15 03:59:26] production.WARNING: No push subscriptions found for user ID: 2  
+[2025-10-15 03:59:26] production.WARNING: PCQueue: Failed to send notification to student ID: 2024001  

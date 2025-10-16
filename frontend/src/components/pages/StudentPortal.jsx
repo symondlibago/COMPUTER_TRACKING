@@ -49,7 +49,7 @@ function StudentPortal() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  
+  const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
     const supported = isPushNotificationSupported();
@@ -147,6 +147,10 @@ function StudentPortal() {
         setStudentActiveUsage(prevUsage => {
           let updatedUsage = { ...prevUsage };
 
+          if (countdown > 0) {
+            setCountdown(prev => prev - 1);
+          }
+
           // If the session is active and not paused, increment the usage duration
           if (prevUsage.status === 'active' && !prevUsage.is_paused) {
             const newUsageSeconds = (prevUsage.actual_usage_duration || 0) + 1;
@@ -165,7 +169,7 @@ function StudentPortal() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [studentActiveUsage]);
+  }, [studentActiveUsage, countdown]);
 
 
   const formatDuration = (totalSeconds) => {
@@ -324,6 +328,12 @@ function StudentPortal() {
       if (response.ok) {
         const data = await response.json();
         console.log('Student Queue Status Data:', data.data); // Debug log
+
+        if (data.data && data.data.status === 'assigned') {
+          setCountdown(data.data.remaining_time);
+        } else {
+          setCountdown(null); // Clear countdown if not assigned
+        }
         
         // Always check if PC is assigned, not just on status change
         if (data.data && data.data.status === 'assigned') {
@@ -661,11 +671,27 @@ function StudentPortal() {
   };
 
   // Calculate real-time countdown for assigned entries
-  const getRealTimeCountdown = (expiresAt) => {
+  // StudentPortal.jsx
+
+  // Calculate real-time countdown for assigned entries
+  const getRealTimeCountdown = (expiresAt, initialRemainingSeconds) => {
+    // If we have an initial value from the server, use it as the source of truth
+    if (initialRemainingSeconds > 0) {
+      const minutes = Math.floor(initialRemainingSeconds / 60);
+      const seconds = initialRemainingSeconds % 60;
+      
+      return {
+        seconds: initialRemainingSeconds,
+        formatted: minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`,
+        isExpired: false
+      };
+    }
+    
+    // Fallback to the old logic if the initial value isn't available
     if (!expiresAt) return { seconds: 0, formatted: 'Expired', isExpired: true };
     
     const expireTime = new Date(expiresAt);
-    const remainingMs = expireTime.getTime() - currentTime.getTime();
+    const remainingMs = expireTime.getTime() - new Date().getTime(); // Use new Date() for accuracy
     const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
     
     if (remainingSeconds <= 0) {
@@ -831,7 +857,7 @@ function StudentPortal() {
                       <div>
                         <p className="font-medium text-orange-700">You are in the queue</p>
                         <p className="text-sm text-muted-foreground">
-                          Position: #{studentQueueStatus.queue_position} • 
+                          Position: #{studentQueueStatus.relative_queue_position} •
                           Joined at {new Date(studentQueueStatus.queued_at).toLocaleTimeString()}
                         </p>
                       </div>
@@ -856,30 +882,30 @@ function StudentPortal() {
                           </p>
                         </div>
                         <div className="text-right">
-                          {(() => {
-                            const countdown = getRealTimeCountdown(studentQueueStatus.expires_at);
-                            return (
-                              <div className="flex items-center gap-2">
-                                <Timer className="h-5 w-5" />
-                                <div>
-                                  <p className={`text-2xl font-bold ${
-                                    countdown.isExpired ? 'text-red-600' : 
-                                    countdown.seconds <= 60 ? 'text-red-600' : 
-                                    countdown.seconds <= 180 ? 'text-orange-600' : 'text-green-600'
-                                  }`}>
-                                    {countdown.formatted}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">Time remaining</p>
-                                </div>
-                              </div>
-                            );
-                          })()}
+                    {(() => {
+                      const countdown = getRealTimeCountdown(studentQueueStatus.expires_at);
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Timer className="h-5 w-5" />
+                          <div>
+                            <p className={`text-2xl font-bold ${
+                              countdown.isExpired ? 'text-red-600' : 
+                              countdown.seconds <= 60 ? 'text-red-600' : 
+                              countdown.seconds <= 180 ? 'text-orange-600' : 'text-green-600'
+                            }`}>
+                              {countdown.formatted}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Time remaining</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                         </div>
                       </div>
                       <Alert className="border-green-500 bg-green-50">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription className="text-green-800">
-                          <strong>Go to the admin now!</strong> You have 5 minutes to check in with the admin 
+                          <strong>Go to the admin now!</strong> You have 2 minutes and 30 seconds to check in with the admin 
                           to start using {studentQueueStatus.assigned_pc_name}. If you don't check in within 
                           the time limit, you'll be moved to the end of the queue.
                         </AlertDescription>
@@ -1143,19 +1169,6 @@ function StudentPortal() {
             </Card>
           )}
 
-          {/* Logout Button */}
-          <Card>
-            <CardContent className="pt-6">
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
-                className="w-full"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </CardContent>
-          </Card>
         </motion.div>
       </div>
     </motion.div>

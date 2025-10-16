@@ -76,26 +76,38 @@ class PCQueueController extends Controller
         try {
             // First, cleanup expired assignments
             PCQueue::cleanupExpiredAssignments();
-
+    
             $queueEntry = PCQueue::with('assignedPC')
                 ->where('student_id', $studentId)
                 ->whereIn('status', ['waiting', 'assigned'])
                 ->first();
-
+    
             if (!$queueEntry) {
                 return response()->json([
-                    'success' => false,
+                    'success' => true, // Return success as the request succeeded
                     'data' => null,
                     'message' => 'Student is not in queue'
                 ], 200);
             }
-
+    
+            $relativePosition = 0; // Default value for assigned students
+        if ($queueEntry->status === 'waiting') {
+            // Count how many other students are WAITING with a lower queue position.
+            $waitingStudentsAhead = PCQueue::waiting()
+                ->where('queue_position', '<', $queueEntry->queue_position)
+                ->count();
+            
+            // The student's position is the number of people ahead of them + 1.
+            $relativePosition = $waitingStudentsAhead + 1;
+        }
+    
             $data = [
                 'id' => $queueEntry->id,
                 'student_id' => $queueEntry->student_id,
                 'student_name' => $queueEntry->student_name,
                 'status' => $queueEntry->status,
-                'queue_position' => $queueEntry->queue_position,
+                'queue_position' => $queueEntry->queue_position, // The absolute position
+                'relative_queue_position' => $relativePosition, // The NEW calculated relative position
                 'queued_at' => $queueEntry->queued_at->toIso8601String(),
                 'assigned_pc_id' => $queueEntry->assigned_pc_id,
                 'assigned_pc_name' => $queueEntry->assignedPC ? $queueEntry->assignedPC->name : null,
@@ -104,7 +116,7 @@ class PCQueueController extends Controller
                 'remaining_time' => $queueEntry->remaining_time,
                 'formatted_remaining_time' => $queueEntry->formatted_remaining_time,
             ];
-
+    
             return response()->json([
                 'success' => true,
                 'data' => $data,
@@ -117,7 +129,6 @@ class PCQueueController extends Controller
             ], 500);
         }
     }
-
     /**
      * Add student to auto queue.
      */

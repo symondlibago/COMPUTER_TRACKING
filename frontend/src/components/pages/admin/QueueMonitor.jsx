@@ -19,6 +19,7 @@ import {
   ListOrdered,
   Activity
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'; 
 import API_BASE_URL from '../Config';
 import { apiGet } from '../../../utils/apiUtils';
 
@@ -29,6 +30,8 @@ function QueueMonitor() {
   const [actionLoading, setActionLoading] = useState({});
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [cancelingAssignment, setCancelingAssignment] = useState(null);
 
   // Update current time every second
   useEffect(() => {
@@ -134,38 +137,45 @@ function QueueMonitor() {
     }
   };
 
-  // Handle expire queue entry
-  const handleExpireQueueEntry = async (queueEntryId) => {
-    if (!window.confirm('Are you sure you want to expire this assignment? The student will be moved to the end of the queue.')) {
-      return;
-    }
+  const openCancelDialog = (entry) => {
+    setCancelingAssignment(entry);
+    setIsCancelDialogOpen(true);
+  };
 
-    setActionLoading(prev => ({ ...prev, [`expire_${queueEntryId}`]: true }));
+  // Handle expire queue entry
+  // QueueMonitor.jsx -> handleCancelAssignment
+
+  const handleCancelAssignment = async (studentId, queueEntryId) => {
+    // The confirmation is now handled by the modal, so we remove window.confirm
+    setActionLoading(prev => ({ ...prev, [`cancel_${queueEntryId}`]: true }));
     
     try {
-      const response = await fetch(`${API_BASE_URL}/pc-queue/${queueEntryId}/expire`, {
+      const response = await fetch(`${API_BASE_URL}/pc-queue/leave`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify({ student_id: studentId })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        showAlert('success', 'Assignment expired and student moved to end of queue');
-        // Refresh data
+        showAlert('success', 'Assignment cancelled and student removed from queue.');
         fetchQueueMonitor();
         fetchQueueStats();
       } else {
-        showAlert('error', data.message || 'Failed to expire assignment');
+        showAlert('error', data.message || 'Failed to cancel assignment');
       }
     } catch (error) {
-      console.error('Expire assignment error:', error);
+      console.error('Cancel assignment error:', error);
       showAlert('error', 'Error connecting to server');
     } finally {
-      setActionLoading(prev => ({ ...prev, [`expire_${queueEntryId}`]: false }));
+      setActionLoading(prev => ({ ...prev, [`cancel_${queueEntryId}`]: false }));
+      // CLOSE THE MODAL after the action
+      setIsCancelDialogOpen(false);
+      setCancelingAssignment(null);
     }
   };
 
@@ -268,7 +278,51 @@ function QueueMonitor() {
     };
   };
 
+  // INSIDE if (loading && !queueData) { ... }
+const renderCancelDialog = () => (
+  <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <AlertCircle className="h-6 w-6 text-red-600" />
+          Confirm Assignment Cancellation
+        </DialogTitle>
+        <DialogDescription>
+          Are you sure you want to cancel this assignment? This action cannot be undone and the student will be removed from the queue entirely.
+        </DialogDescription>
+      </DialogHeader>
+      {cancelingAssignment && (
+        <div className="my-4 p-4 bg-muted border rounded-lg">
+          <p><strong>Student:</strong> {cancelingAssignment.student_name}</p>
+          <p><strong>PC:</strong> {cancelingAssignment.assigned_pc_name}</p>
+        </div>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+          Go Back
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => handleCancelAssignment(cancelingAssignment.student_id, cancelingAssignment.id)}
+          disabled={actionLoading[`cancel_${cancelingAssignment?.id}`]}
+        >
+          {actionLoading[`cancel_${cancelingAssignment?.id}`] ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Cancelling...
+            </>
+          ) : (
+            'Yes, Cancel Assignment'
+          )}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
   if (loading && !queueData) {
+
+    
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -289,6 +343,7 @@ function QueueMonitor() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+    {renderCancelDialog()}
       {/* Success/Error Alert */}
       <AnimatePresence>
         {alert.show && (
@@ -475,15 +530,15 @@ function QueueMonitor() {
                             </Button>
                             
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleExpireQueueEntry(entry.id)}
-                              disabled={actionLoading[`expire_${entry.id}`]}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <UserX className="h-3 w-3 mr-1" />
-                              {actionLoading[`expire_${entry.id}`] ? 'Expiring...' : 'Expire'}
-                            </Button>
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCancelDialog(entry)}
+                            disabled={actionLoading[`cancel_${entry.id}`]}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <UserX className="h-3 w-3 mr-1" />
+                            {actionLoading[`cancel_${entry.id}`] ? 'Cancelling...' : 'Cancel'}
+                          </Button>
                           </div>
                         </div>
                       </motion.div>
@@ -526,9 +581,9 @@ function QueueMonitor() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
-                            {entry.queue_position}
-                          </div>
+                        <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </div>
                           <div>
                             <h4 className="font-semibold">{entry.student_name}</h4>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -623,42 +678,7 @@ function QueueMonitor() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Queue Management</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={handleProcessQueue}
-                disabled={loading}
-              >
-                <ListOrdered className="h-4 w-4 mr-2" />
-                Process Queue
-              </Button>
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={handleCleanupExpired}
-                disabled={loading}
-              >
-                <Timer className="h-4 w-4 mr-2" />
-                Cleanup Expired
-              </Button>
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={handleRefresh}
-                disabled={loading}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-            </CardContent>
-          </Card>
+        
         </div>
       </div>
     </motion.div>

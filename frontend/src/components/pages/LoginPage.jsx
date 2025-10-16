@@ -151,7 +151,7 @@ function LoginPage() {
               <Monitor className="h-8 w-8 text-white" />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-bold">PC Monitor Pro</h1>
+              <h1 className="text-2xl font-bold">E-Lib Online Queuing</h1>
               <p className="text-sm text-muted-foreground">Computer Lab Management</p>
             </div>
           </motion.div>
@@ -325,7 +325,7 @@ function LoginPage() {
           transition={{ delay: 0.5 }}
           className="text-center mt-6 text-sm text-muted-foreground"
         >
-          <p>© 2024 PC Monitor Pro. All rights reserved.</p>
+          <p>© 2025 E-Lib Online Queuing. All rights reserved.</p>
         </motion.div>
       </motion.div>
     </div>

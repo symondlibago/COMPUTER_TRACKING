@@ -23,6 +23,8 @@ class PC extends Model
      */
     protected $fillable = [
         'name',
+        'host_name',
+        'mac_address',
         'row',
         'status',
     ];

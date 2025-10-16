@@ -277,7 +277,7 @@ function HomePage() {
               Ready to Transform Your Lab?
             </h2>
             <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Join thousands of institutions already using PC Monitor Pro to streamline 
+              Join thousands of institutions already using E-Lib Online Queuing to streamline 
               their computer lab operations.
             </p>
             

@@ -38,12 +38,16 @@ class PCController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:pcs,name',
+                'host_name' => 'nullable|string|max:255|unique:pcs,host_name',
+                'mac_address' => 'nullable|mac_address|unique:pcs,mac_address',
                 'row' => 'required|string|max:100',
                 'status' => 'sometimes|in:active,in-use,reserved'
             ]);
 
             $pc = PC::create([
                 'name' => $validated['name'],
+                'host_name' => $validated['host_name'] ?? null,
+                'mac_address' => $validated['mac_address'] ?? null,
                 'row' => $validated['row'],
                 'status' => $validated['status'] ?? 'active'
             ]);
@@ -95,6 +99,8 @@ class PCController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255|unique:pcs,name,' . $pc->id,
+                'host_name' => 'nullable|string|max:255|unique:pcs,host_name,' . $pc->id,
+                'mac_address' => 'nullable|mac_address|unique:pcs,mac_address,' . $pc->id,
                 'row' => 'sometimes|string|max:100',
                 'status' => 'sometimes|in:active,in-use,reserved'
             ]);

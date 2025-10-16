@@ -67,7 +67,7 @@ function Navbar() {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full pulse-red"></div>
               </div>
               <div>
-                <h1 className="text-xl font-black gradient-text">PC Monitor Pro</h1>
+                <h1 className="text-xl font-black gradient-text">E-Lib Online Queuing</h1>
                 <p className="text-xs text-muted-foreground">Computer Lab Management</p>
               </div>
             </Link>
