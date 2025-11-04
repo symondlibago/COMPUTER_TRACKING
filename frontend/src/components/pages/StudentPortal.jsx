@@ -344,6 +344,8 @@ function StudentPortal() {
           // Only show notification if we haven't shown one in the last 20 seconds
           if (!lastNotificationTime || (currentTime - parseInt(lastNotificationTime)) > 20000) {
             localStorage.setItem('lastPcAssignedNotification', currentTime.toString());
+            // Clear any 'you are next' notification timestamp
+            localStorage.removeItem('lastYouAreNextNotification');
             
             // Show notification even if tab is inactive
             try {
@@ -390,12 +392,46 @@ function StudentPortal() {
               console.error('Error showing notification:', error);
             }
           }
+
+        } else if (data.data && data.data.status === 'waiting' && data.data.relative_queue_position === 1) { //
+          
+          // Store the notification time to prevent duplicates on every refresh
+          const lastNotificationTime = localStorage.getItem('lastYouAreNextNotification');
+          const currentTime = Date.now();
+
+          // Only show notification if we haven't shown one in the last 20 seconds
+          if (!lastNotificationTime || (currentTime - parseInt(lastNotificationTime)) > 20000) {
+            localStorage.setItem('lastYouAreNextNotification', currentTime.toString());
+
+            try {
+              const { showNotification } = await import('@/utils/pushNotification');
+              
+              await showNotification("🔔 You're Next in Line!", {
+                body: "Get ready! The person ahead of you has been assigned a PC. Your turn is coming up soon.",
+                icon: '/favicon.ico',
+                vibrate: [100, 50, 100],
+                requireInteraction: false, // Doesn't need to be as aggressive
+                renotify: true,
+                tag: 'pc-next-in-line',
+                silent: false,
+                data: {
+                  url: '/student-portal',
+                  importance: 'high'
+                }
+              });
+            } catch (error) {
+              console.error("Error showing 'you are next' notification:", error);
+            }
+          }
         } else if (data.data && data.data.status === 'completed') {
           // Clear any pending reminders when checked in
           if (window.pcAssignmentReminder) {
             clearTimeout(window.pcAssignmentReminder);
             window.pcAssignmentReminder = null;
           }
+          // Clear notification timestamps to allow new ones
+          localStorage.removeItem('lastPcAssignedNotification');
+          localStorage.removeItem('lastYouAreNextNotification');
         }
         
         setStudentQueueStatus(data.data);

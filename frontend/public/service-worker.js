@@ -12,12 +12,14 @@ self.addEventListener('push', function(event) {
   console.log(`[Service Worker] Push had this data: "${event.data ? event.data.text() : 'no data'}"`);
 
   let notificationData = {};
-  
+  let payloadData = {}; // <-- ADDED: To store the 'data' part of the payload
+
   try {
     // Try to parse the data as JSON
     const jsonData = event.data ? event.data.json() : {};
     notificationData = jsonData.notification || {};
-    
+    payloadData = jsonData.data || {}; // <-- ADDED: Get the data object from the payload
+
     // If there's no title in the notification data, use a default
     if (!notificationData.title) {
       notificationData.title = '🔔 PC Available!';
@@ -83,38 +85,43 @@ self.addEventListener('push', function(event) {
   // Wait until the notification is shown
   event.waitUntil(showNotificationPromise);
   
-  // Send follow-up notifications with increasing urgency
-  const followUps = [
-    {
-      delay: 10000,
-      title: '⚠️ PC Assignment Expiring!',
-      body: 'Your PC assignment will expire soon! Please check in immediately!',
-      vibrate: [800, 200, 800, 200, 800]
-    },
-    {
-      delay: 30000,
-      title: '🚨 FINAL WARNING!',
-      body: 'Last chance to claim your PC! Check in now or lose your spot!',
-      vibrate: [1000, 200, 1000, 200, 1000]
-    }
-  ];
-  
-  followUps.forEach((followUp, index) => {
-    setTimeout(() => {
-      console.log(`[Service Worker] Sending follow-up notification ${index + 1}`);
-      self.registration.showNotification(
-        followUp.title,
-        {
-          ...notificationData,
-          title: followUp.title,
-          body: followUp.body,
-          vibrate: followUp.vibrate,
-          tag: `pc-notification-followup-${index + 1}-${Date.now()}`,
-          timestamp: Date.now()
-        }
-      );
-    }, followUp.delay);
-  });
+  if (payloadData.type !== 'you_are_next') {
+    // Send follow-up notifications with increasing urgency
+    const followUps = [
+      {
+        delay: 10000,
+        title: '⚠️ PC Assignment Expiring!',
+        body: 'Your PC assignment will expire soon! Please check in immediately!',
+        vibrate: [800, 200, 800, 200, 800]
+      },
+      {
+        delay: 30000,
+        title: '🚨 FINAL WARNING!',
+        body: 'Last chance to claim your PC! Check in now or lose your spot!',
+        vibrate: [1000, 200, 1000, 200, 1000]
+      }
+    ];
+    
+    followUps.forEach((followUp, index) => {
+      setTimeout(() => {
+        console.log(`[Service Worker] Sending follow-up notification ${index + 1}`);
+        self.registration.showNotification(
+          followUp.title,
+          {
+            ...notificationData,
+            title: followUp.title,
+            body: followUp.body,
+            vibrate: followUp.vibrate,
+            tag: `pc-notification-followup-${index + 1}-${Date.now()}`,
+            timestamp: Date.now()
+          }
+        );
+      }, followUp.delay);
+    });
+  } else {
+    // This is the "You're next" notification, so we log it and do nothing else.
+    console.log("[Service Worker] 'you_are_next' notification received. Skipping follow-ups.");
+  }
 });
 
 // Handle notification click
