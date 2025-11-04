@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use App\Models\PCQueue;
 
 class PCUsage extends Model
 {
@@ -261,6 +262,8 @@ class PCUsage extends Model
 
         // Update PC status back to active
         $this->pc()->update(['status' => 'active']);
+
+        PCQueue::processQueue();
     }
 
     /**
@@ -282,6 +285,7 @@ class PCUsage extends Model
 
         // Update PC status back to active
         $this->pc()->update(['status' => 'active']);
+        PCQueue::processQueue();
     }
 
     /**

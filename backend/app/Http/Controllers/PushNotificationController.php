@@ -139,6 +139,58 @@ class PushNotificationController extends Controller
             return false;
         }
     }
+
+    public function notifyStudentIsNext($studentId)
+    {
+        try {
+            Log::info("Attempting to send 'You are next' notification to student ID: {$studentId}");
+            
+            $user = User::where('student_id', $studentId)->first();
+            
+            if (!$user) {
+                Log::error("User not found for student ID: {$studentId}");
+                return false;
+            }
+            
+            $subscriptions = PushSubscription::where('user_id', $user->id)->get();
+            
+            if ($subscriptions->isEmpty()) {
+                Log::warning("No push subscriptions found for user ID: {$user->id}");
+                return false;
+            }
+            
+            $successCount = 0;
+            
+            foreach ($subscriptions as $subscription) {
+                $result = $this->sendPushNotification(
+                    $subscription,
+                    "🔔 You're Next in Line!",
+                    "Get ready! The person ahead of you has been assigned a PC. Your turn is coming up soon.",
+                    [
+                        'url' => '/student-portal',
+                        'timestamp' => time(),
+                        'type' => 'you_are_next' // <-- ADDED THIS TYPE
+                    ]
+                );
+                
+                if ($result) {
+                    $successCount++;
+                }
+            }
+            
+            if ($successCount > 0) {
+                Log::info("Successfully sent {$successCount} 'you are next' notifications to student ID: {$studentId}");
+                return true;
+            } else {
+                Log::warning("Failed to send any 'you are next' notifications to student ID: {$studentId}");
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error("Error sending 'you are next' notification: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
     
     /**
      * Send a push notification to a subscription
@@ -161,10 +213,10 @@ class PushNotificationController extends Controller
             // Create the notification payload with enhanced options and stronger alerts
             $payload = json_encode([
                 'notification' => [
-                    'title' => '🚨 ' . $title,
+                    'title' => $title,
                     'body' => $body,
                     'icon' => '/favicon.ico',
-                    'vibrate' => [200, 100, 200, 200, 200, 200, 200, 100, 200], // Stronger vibration pattern
+                    'vibrate' => [200, 100, 200, 200, 200, 200, 200, 100, 200], 
                     'tag' => 'pc-notification-' . $timestamp,
                     'requireInteraction' => true,
                     'renotify' => true,

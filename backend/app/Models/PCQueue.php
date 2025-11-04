@@ -290,6 +290,13 @@ class PCQueue extends Model
         
         // Send push notification to student
         $this->sendPcAvailableNotification($pc);
+
+        $nextStudent = static::waiting()->orderByPosition()->first();
+
+        if ($nextStudent) {
+            // Send them the "You're next" notification
+            $nextStudent->sendYouAreNextNotification();
+        }
     }
     
     /**
@@ -315,6 +322,31 @@ class PCQueue extends Model
             return $result;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("PCQueue: Failed to send PC available notification: {$e->getMessage()}");
+            \Illuminate\Support\Facades\Log::error("PCQueue: Stack trace: {$e->getTraceAsString()}");
+            return false;
+        }
+    }
+
+    protected function sendYouAreNextNotification()
+    {
+        try {
+            \Illuminate\Support\Facades\Log::info("PCQueue: Sending 'You are next' notification to student ID: {$this->student_id}");
+            
+            // Get the PushNotificationController
+            $controller = app()->make('App\Http\Controllers\PushNotificationController');
+            
+            // Send notification to student
+            $result = $controller->notifyStudentIsNext($this->student_id);
+            
+            if ($result) {
+                \Illuminate\Support\Facades\Log::info("PCQueue: Successfully sent 'You are next' notification to student ID: {$this->student_id}");
+            } else {
+                \Illuminate\Support\Facades\Log::warning("PCQueue: Failed to send 'You are next' notification to student ID: {$this->student_id}");
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("PCQueue: Failed to send 'You are next' notification: {$e->getMessage()}");
             \Illuminate\Support\Facades\Log::error("PCQueue: Stack trace: {$e->getTraceAsString()}");
             return false;
         }
