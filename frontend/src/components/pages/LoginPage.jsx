@@ -152,7 +152,7 @@ function LoginPage() {
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-bold">E-Lib Online Queuing</h1>
-              <p className="text-sm text-muted-foreground">Computer Lab Management</p>
+              <p className="text-sm text-muted-foreground">Computer Laboratory</p>
             </div>
           </motion.div>
           <p className="text-muted-foreground">
