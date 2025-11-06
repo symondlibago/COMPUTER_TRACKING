@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge'; // Added Badge
 import {
   Monitor,
   Users,
@@ -34,6 +35,7 @@ import {
   registerServiceWorker
 } from '@/utils/pushNotification';
 import { apiGet } from '../../utils/apiUtils';
+
 function StudentPortal() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
@@ -467,7 +469,7 @@ function StudentPortal() {
 
   // State for auto-refresh countdown
   const [refreshCountdown, setRefreshCountdown] = useState(10);
-  const AUTO_REFRESH_INTERVAL = 30000; // 2 minutes
+  const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
   
   // Initial data fetch and setup interval
   useEffect(() => {
@@ -493,7 +495,7 @@ function StudentPortal() {
         setRefreshCountdown(prev => Math.max(0, prev - 1));
       }, 1000);
       
-      // Set up interval to refresh data every 10 seconds
+      // Set up interval to refresh data
       const refreshInterval = setInterval(() => {
         fetchPCStatus();
         fetchActiveUsage();
@@ -1205,6 +1207,64 @@ function StudentPortal() {
             </Card>
           )}
 
+          {/* =========================================
+            ===           NEW CARD ADDED          ===
+            =========================================
+            This card shows the anonymized waiting list.
+            It uses the existing 'queueStatus' state.
+          */}
+          {shouldShowAutoQueue && queueStatus?.queue_entries && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5 text-gray-500" />
+                  Waiting List
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {(() => {
+                    // Filter for only 'waiting' students from the existing data
+                    const waitingList = queueStatus.queue_entries.filter(
+                      (entry) => entry.status === 'waiting'
+                    );
+
+                    if (waitingList.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          The waiting list is empty.
+                        </p>
+                      );
+                    }
+
+                    // Map over the list and show "Anonymous"
+                    return waitingList.map((entry, index) => (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-center justify-between p-2 border-b last:border-b-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold w-6 h-6 flex items-center justify-center bg-muted text-muted-foreground rounded-full">
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-sm">Anonymous</span>
+                        </div>
+                        <Badge variant="outline">Waiting</Badge>
+                      </motion.div>
+                    ));
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {/* =========================================
+            ===         END OF NEW CARD           ===
+            =========================================
+          */}
+
         </motion.div>
       </div>
     </motion.div>
@@ -1212,4 +1272,3 @@ function StudentPortal() {
 }
 
 export default StudentPortal;
-

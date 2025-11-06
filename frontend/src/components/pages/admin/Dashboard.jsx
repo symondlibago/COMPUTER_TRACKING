@@ -29,10 +29,12 @@ function Dashboard() {
   const [refreshTime, setRefreshTime] = useState(new Date());
   const [timeRange, setTimeRange] = useState('week');
   const [viewType, setViewType] = useState('overview');
-  const [pcs, setPcs] = useState([]);
+  const [pcs, setPcs] =useState([]);
   const [pcPerformanceData, setPcPerformanceData] = useState([]);
+  const [queueStats, setQueueStats] = useState(null); // NEW: State for queue statistics
   const [loading, setLoading] = useState(true);
   const [performanceLoading, setPerformanceLoading] = useState(true);
+  const [queueStatsLoading, setQueueStatsLoading] = useState(true); // NEW: Loading state for queue stats
 
   const fetchPCs = async () => {
     try {
@@ -68,13 +70,35 @@ function Dashboard() {
     }
   };
 
+  // NEW: Function to fetch queue statistics
+  const fetchQueueStats = async () => {
+    try {
+      setQueueStatsLoading(true);
+      const response = await apiGet('/pc-queue/statistics'); // Fetching from the correct endpoint
+      if (response.ok) {
+        const data = await response.json();
+        setQueueStats(data.data || null);
+      } else {
+        console.error('Failed to fetch queue statistics');
+      }
+    } catch (error) {
+      console.error('Fetch queue statistics error:', error);
+    } finally {
+      setQueueStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchPCs();
     fetchPCPerformanceAnalytics();
+    fetchQueueStats(); // NEW: Call the new function on load
+    
     const interval = setInterval(() => {
       fetchPCs();
       fetchPCPerformanceAnalytics();
+      fetchQueueStats(); // NEW: Call the new function on interval
     }, 30000); // Refresh every 30 seconds
+    
     return () => clearInterval(interval);
   }, []);
   
@@ -85,7 +109,7 @@ function Dashboard() {
     inUsePCs: pcs.filter(pc => pc.status === 'in-use').length,
     maintenancePCs: pcs.filter(pc => pc.status === 'maintenance').length,
     totalStudents: state.students.length,
-    queueLength: state.queue.length,
+    queueLength: queueStats?.queue_stats?.waiting || 0, // MODIFIED: Get waiting students from queueStats
     utilizationRate: pcs.length > 0 ? Math.round((pcs.filter(pc => pc.status === 'in-use').length / pcs.length) * 100) : 0
   };
 
@@ -107,6 +131,7 @@ function Dashboard() {
     setRefreshTime(new Date());
     fetchPCs();
     fetchPCPerformanceAnalytics();
+    fetchQueueStats(); // NEW: Call the new function on manual refresh
   };
 
   return (
@@ -203,13 +228,17 @@ function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* THIS IS THE CARD THAT IS NOW FIXED */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Queue</CardTitle>
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">{stats.queueLength}</div>
+            {/* This div now uses stats.queueLength, which is correctly populated */}
+            <div className="text-2xl font-bold text-orange-500">
+              {queueStatsLoading ? '...' : stats.queueLength}
+            </div>
             <p className="text-xs text-muted-foreground">
               Students waiting
             </p>
@@ -358,4 +387,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

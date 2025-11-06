@@ -6871,3 +6871,11 @@ Did you mean one of these?
 [2025-11-04 02:57:14] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
 [2025-11-04 02:57:14] local.WARNING: No push subscriptions found for user ID: 4  
 [2025-11-04 02:57:14] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-06 01:41:45] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-06 01:41:45] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-06 01:41:45] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-06 01:41:45] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-11-06 01:41:45] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024002  
+[2025-11-06 01:41:45] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
+[2025-11-06 01:41:45] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-06 01:41:45] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
