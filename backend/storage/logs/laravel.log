@@ -6879,3 +6879,220 @@ Did you mean one of these?
 [2025-11-06 01:41:45] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
 [2025-11-06 01:41:45] local.WARNING: No push subscriptions found for user ID: 3  
 [2025-11-06 01:41:45] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:14:29] local.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:14:29] local.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:14:29] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:14:29] local.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-11-13 03:14:29] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:14:29] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:14:29] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:14:29] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:17:02] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:17:02] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:17:02] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:17:02] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-11-13 03:17:02] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:17:02] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:17:02] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:17:02] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:19:32] local.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:19:32] local.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:19:32] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:19:32] local.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-11-13 03:19:32] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:19:32] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:19:32] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:19:32] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:19:32] local.ERROR: Call to a member function toIso8601String() on null {"exception":"[object] (Error(code: 0): Call to a member function toIso8601String() on null at C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php:257)
+[stacktrace]
+#0 [internal function]: App\\Http\\Controllers\\PCQueueController->App\\Http\\Controllers\\{closure}(Object(App\\Models\\PCQueue), 0)
+#1 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Arr.php(600): array_map(Object(Closure), Array, Array)
+#2 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Collection.php(778): Illuminate\\Support\\Arr::map(Array, Object(Closure))
+#3 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Collection.php(344): Illuminate\\Support\\Collection->map(Object(Closure))
+#4 C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php(248): Illuminate\\Database\\Eloquent\\Collection->map(Object(Closure))
+#5 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Controller.php(54): App\\Http\\Controllers\\PCQueueController->getQueueMonitor()
+#6 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php(43): Illuminate\\Routing\\Controller->callAction('getQueueMonitor', Array)
+#7 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(259): Illuminate\\Routing\\ControllerDispatcher->dispatch(Object(Illuminate\\Routing\\Route), Object(App\\Http\\Controllers\\PCQueueController), 'getQueueMonitor')
+#8 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(205): Illuminate\\Routing\\Route->runController()
+#9 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(806): Illuminate\\Routing\\Route->run()
+#10 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Routing\\Router->Illuminate\\Routing\\{closure}(Object(Illuminate\\Http\\Request))
+#11 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\SubstituteBindings.php(50): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#12 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\SubstituteBindings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#13 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(159): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#14 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(125): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequest(Object(Illuminate\\Http\\Request), Object(Closure), Array)
+#15 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(87): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequestUsingNamedLimiter(Object(Illuminate\\Http\\Request), Object(Closure), 'api', Object(Closure))
+#16 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\ThrottleRequests->handle(Object(Illuminate\\Http\\Request), Object(Closure), 'api')
+#17 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#18 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(805): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#19 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(784): Illuminate\\Routing\\Router->runRouteWithinStack(Object(Illuminate\\Routing\\Route), Object(Illuminate\\Http\\Request))
+#20 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(748): Illuminate\\Routing\\Router->runRoute(Object(Illuminate\\Http\\Request), Object(Illuminate\\Routing\\Route))
+#21 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(737): Illuminate\\Routing\\Router->dispatchToRoute(Object(Illuminate\\Http\\Request))
+#22 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(200): Illuminate\\Routing\\Router->dispatch(Object(Illuminate\\Http\\Request))
+#23 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Foundation\\Http\\Kernel->Illuminate\\Foundation\\Http\\{closure}(Object(Illuminate\\Http\\Request))
+#24 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#25 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull.php(31): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#26 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#27 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#28 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TrimStrings.php(40): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#29 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\TrimStrings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#30 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#31 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#32 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance.php(99): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#33 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#34 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\HandleCors.php(62): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#35 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\HandleCors->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#36 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\TrustProxies.php(39): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#37 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\TrustProxies->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#38 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#39 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#40 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter(Object(Illuminate\\Http\\Request))
+#41 C:\\COMPUTER_TRACKING\\backend\\public\\index.php(51): Illuminate\\Foundation\\Http\\Kernel->handle(Object(Illuminate\\Http\\Request))
+#42 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('C:\\\\COMPUTER_TRA...')
+#43 {main}
+"} 
+[2025-11-13 03:22:16] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:22:16] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:22:16] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:22:16] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-11-13 03:22:16] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:22:16] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:22:16] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:22:16] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:24:46] local.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:24:46] local.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:24:46] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:24:46] local.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-11-13 03:24:46] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:24:46] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:24:46] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:24:46] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:24:46] local.ERROR: Call to a member function toIso8601String() on null {"exception":"[object] (Error(code: 0): Call to a member function toIso8601String() on null at C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php:257)
+[stacktrace]
+#0 [internal function]: App\\Http\\Controllers\\PCQueueController->App\\Http\\Controllers\\{closure}(Object(App\\Models\\PCQueue), 0)
+#1 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Arr.php(600): array_map(Object(Closure), Array, Array)
+#2 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Collection.php(778): Illuminate\\Support\\Arr::map(Array, Object(Closure))
+#3 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Collection.php(344): Illuminate\\Support\\Collection->map(Object(Closure))
+#4 C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php(248): Illuminate\\Database\\Eloquent\\Collection->map(Object(Closure))
+#5 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Controller.php(54): App\\Http\\Controllers\\PCQueueController->getQueueMonitor()
+#6 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php(43): Illuminate\\Routing\\Controller->callAction('getQueueMonitor', Array)
+#7 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(259): Illuminate\\Routing\\ControllerDispatcher->dispatch(Object(Illuminate\\Routing\\Route), Object(App\\Http\\Controllers\\PCQueueController), 'getQueueMonitor')
+#8 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(205): Illuminate\\Routing\\Route->runController()
+#9 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(806): Illuminate\\Routing\\Route->run()
+#10 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Routing\\Router->Illuminate\\Routing\\{closure}(Object(Illuminate\\Http\\Request))
+#11 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\SubstituteBindings.php(50): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#12 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\SubstituteBindings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#13 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(159): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#14 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(125): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequest(Object(Illuminate\\Http\\Request), Object(Closure), Array)
+#15 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(87): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequestUsingNamedLimiter(Object(Illuminate\\Http\\Request), Object(Closure), 'api', Object(Closure))
+#16 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\ThrottleRequests->handle(Object(Illuminate\\Http\\Request), Object(Closure), 'api')
+#17 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#18 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(805): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#19 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(784): Illuminate\\Routing\\Router->runRouteWithinStack(Object(Illuminate\\Routing\\Route), Object(Illuminate\\Http\\Request))
+#20 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(748): Illuminate\\Routing\\Router->runRoute(Object(Illuminate\\Http\\Request), Object(Illuminate\\Routing\\Route))
+#21 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(737): Illuminate\\Routing\\Router->dispatchToRoute(Object(Illuminate\\Http\\Request))
+#22 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(200): Illuminate\\Routing\\Router->dispatch(Object(Illuminate\\Http\\Request))
+#23 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Foundation\\Http\\Kernel->Illuminate\\Foundation\\Http\\{closure}(Object(Illuminate\\Http\\Request))
+#24 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#25 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull.php(31): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#26 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#27 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#28 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TrimStrings.php(40): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#29 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\TrimStrings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#30 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#31 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#32 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance.php(99): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#33 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#34 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\HandleCors.php(62): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#35 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\HandleCors->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#36 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\TrustProxies.php(39): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#37 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\TrustProxies->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#38 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#39 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#40 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter(Object(Illuminate\\Http\\Request))
+#41 C:\\COMPUTER_TRACKING\\backend\\public\\index.php(51): Illuminate\\Foundation\\Http\\Kernel->handle(Object(Illuminate\\Http\\Request))
+#42 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('C:\\\\COMPUTER_TRA...')
+#43 {main}
+"} 
+[2025-11-13 03:27:25] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:27:25] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:27:25] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:27:25] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-11-13 03:27:25] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:27:25] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:27:25] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:27:25] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:30:23] local.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:30:23] local.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:30:23] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:30:23] local.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-11-13 03:30:23] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:30:23] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:30:23] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:30:23] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:32:53] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:32:53] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:32:53] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:32:53] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  
+[2025-11-13 03:32:53] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:32:53] local.INFO: Attempting to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:32:53] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:32:53] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024002  
+[2025-11-13 03:32:53] local.ERROR: Call to a member function toIso8601String() on null {"exception":"[object] (Error(code: 0): Call to a member function toIso8601String() on null at C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php:257)
+[stacktrace]
+#0 [internal function]: App\\Http\\Controllers\\PCQueueController->App\\Http\\Controllers\\{closure}(Object(App\\Models\\PCQueue), 0)
+#1 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Arr.php(600): array_map(Object(Closure), Array, Array)
+#2 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Collections\\Collection.php(778): Illuminate\\Support\\Arr::map(Array, Object(Closure))
+#3 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Collection.php(344): Illuminate\\Support\\Collection->map(Object(Closure))
+#4 C:\\COMPUTER_TRACKING\\backend\\app\\Http\\Controllers\\PCQueueController.php(248): Illuminate\\Database\\Eloquent\\Collection->map(Object(Closure))
+#5 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Controller.php(54): App\\Http\\Controllers\\PCQueueController->getQueueMonitor()
+#6 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php(43): Illuminate\\Routing\\Controller->callAction('getQueueMonitor', Array)
+#7 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(259): Illuminate\\Routing\\ControllerDispatcher->dispatch(Object(Illuminate\\Routing\\Route), Object(App\\Http\\Controllers\\PCQueueController), 'getQueueMonitor')
+#8 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php(205): Illuminate\\Routing\\Route->runController()
+#9 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(806): Illuminate\\Routing\\Route->run()
+#10 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Routing\\Router->Illuminate\\Routing\\{closure}(Object(Illuminate\\Http\\Request))
+#11 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\SubstituteBindings.php(50): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#12 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\SubstituteBindings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#13 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(159): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#14 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(125): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequest(Object(Illuminate\\Http\\Request), Object(Closure), Array)
+#15 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\ThrottleRequests.php(87): Illuminate\\Routing\\Middleware\\ThrottleRequests->handleRequestUsingNamedLimiter(Object(Illuminate\\Http\\Request), Object(Closure), 'api', Object(Closure))
+#16 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Routing\\Middleware\\ThrottleRequests->handle(Object(Illuminate\\Http\\Request), Object(Closure), 'api')
+#17 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#18 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(805): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#19 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(784): Illuminate\\Routing\\Router->runRouteWithinStack(Object(Illuminate\\Routing\\Route), Object(Illuminate\\Http\\Request))
+#20 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(748): Illuminate\\Routing\\Router->runRoute(Object(Illuminate\\Http\\Request), Object(Illuminate\\Routing\\Route))
+#21 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php(737): Illuminate\\Routing\\Router->dispatchToRoute(Object(Illuminate\\Http\\Request))
+#22 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(200): Illuminate\\Routing\\Router->dispatch(Object(Illuminate\\Http\\Request))
+#23 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(144): Illuminate\\Foundation\\Http\\Kernel->Illuminate\\Foundation\\Http\\{closure}(Object(Illuminate\\Http\\Request))
+#24 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#25 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull.php(31): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#26 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#27 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#28 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TrimStrings.php(40): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#29 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\TrimStrings->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#30 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#31 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\ValidatePostSize->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#32 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance.php(99): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#33 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#34 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\HandleCors.php(62): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#35 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\HandleCors->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#36 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\TrustProxies.php(39): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#37 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(183): Illuminate\\Http\\Middleware\\TrustProxies->handle(Object(Illuminate\\Http\\Request), Object(Closure))
+#38 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php(119): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}(Object(Illuminate\\Http\\Request))
+#39 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then(Object(Closure))
+#40 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter(Object(Illuminate\\Http\\Request))
+#41 C:\\COMPUTER_TRACKING\\backend\\public\\index.php(51): Illuminate\\Foundation\\Http\\Kernel->handle(Object(Illuminate\\Http\\Request))
+#42 C:\\COMPUTER_TRACKING\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('C:\\\\COMPUTER_TRA...')
+#43 {main}
+"} 
+[2025-11-13 03:35:25] local.INFO: PCQueue: Sending PC available notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:35:25] local.INFO: Attempting to send notification to student ID: 2024002 for PC: PC-001  
+[2025-11-13 03:35:25] local.WARNING: No push subscriptions found for user ID: 3  
+[2025-11-13 03:35:25] local.WARNING: PCQueue: Failed to send notification to student ID: 2024002  
+[2025-11-13 03:35:25] local.INFO: PCQueue: Sending 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:35:25] local.INFO: Attempting to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:35:25] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:35:25] local.WARNING: PCQueue: Failed to send 'You are next' notification to student ID: 2024003  
+[2025-11-13 03:36:43] local.INFO: PCQueue: Sending PC available notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:36:43] local.INFO: Attempting to send notification to student ID: 2024003 for PC: PC-001  
+[2025-11-13 03:36:43] local.WARNING: No push subscriptions found for user ID: 4  
+[2025-11-13 03:36:43] local.WARNING: PCQueue: Failed to send notification to student ID: 2024003  

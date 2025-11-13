@@ -68,7 +68,6 @@ function Navbar() {
               </div>
               <div>
                 <h1 className="text-xl font-black gradient-text">E-Lib Online Queuing</h1>
-                <p className="text-xs text-muted-foreground">Computer Laboratory</p>
               </div>
             </Link>
           </div>
