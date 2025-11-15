@@ -45,6 +45,11 @@ function StudentManagement() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  
+  // NEW: State for statistics
+  const [queueStats, setQueueStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   const [newStudent, setNewStudent] = useState({
     name: '',
     student_id: '',
@@ -86,8 +91,37 @@ function StudentManagement() {
     }
   };
 
+  // NEW: Function to fetch queue statistics for the cards
+  const fetchQueueStats = async () => {
+    setStatsLoading(true);
+    try {
+      const response = await apiGet('/pc-queue/statistics');
+      const data = await response.json();
+      
+      if (data.success) {
+        setQueueStats(data.data);
+      } else {
+        console.error('Failed to fetch queue stats:', data.message);
+        // Don't show an error modal for this, just log it
+      }
+    } catch (error) {
+      console.error('Error fetching queue stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+
   useEffect(() => {
     fetchStudents();
+    fetchQueueStats(); // <-- Fetch stats on load
+
+    // Refresh stats every 30 seconds
+    const interval = setInterval(() => {
+      fetchQueueStats();
+    }, 30000); 
+
+    return () => clearInterval(interval);
   }, []);
 
   const filteredStudents = students.filter(student =>
@@ -338,8 +372,9 @@ function StudentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Sessions</p>
+                {/* MODIFIED: This now shows the count from the API */}
                 <p className="text-2xl font-bold text-green-600">
-                  {state.pcs.filter(pc => pc.currentUser).length}
+                  {statsLoading ? '...' : queueStats?.pc_stats?.in_use ?? 0}
                 </p>
               </div>
               <UserCheck className="h-8 w-8 text-green-500" />
@@ -351,8 +386,9 @@ function StudentManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">In Queue</p>
+                {/* MODIFIED: This shows 'total_active' (waiting + assigned) from the API */}
                 <p className="text-2xl font-bold text-orange-600">
-                  {state.queue.length}
+                  {statsLoading ? '...' : queueStats?.queue_stats?.total_active ?? 0}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-orange-500" />
@@ -654,4 +690,3 @@ function StudentManagement() {
 }
 
 export default StudentManagement;
-
